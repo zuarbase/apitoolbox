@@ -1,15 +1,24 @@
+import os
 from setuptools import setup, find_packages
 
 PACKAGE = "apitoolbox"
-VERSION = "0.9.0"
+VERSION = "0.9.1"
 
 URL = "https://github.com/zuarbase/" + PACKAGE
 DOWNLOAD_URL= URL + "/archive/v" + VERSION + ".tar.gz"
+
+DESCRIPTION = "Full-stack async framework for Python."
+
+with open("README.md", "r") as filp:
+    LONG_DESCRIPTION = filp.read()
 
 
 setup(
     name=PACKAGE,
     version=VERSION,
+    description=DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
+    long_description_content_type="text/markdown",
     author="Matthew Laue",
     author_email="matt@zuar.com",
     url=URL,

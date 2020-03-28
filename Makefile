@@ -34,3 +34,8 @@ pyenv:
 	virtualenv -p python3 pyenv
 	pyenv/bin/pip install -e .[dev,prod]
 .PHONY: pyenv
+
+clean:
+	rm -rf build dist *.egg-info
+	find apitoolbox tests -name __pycache__ -prune -exec rm -rf '{}' ';'
+.PHONY: clean
