@@ -1,6 +1,6 @@
 import sqlalchemy.ext.declarative
 
-from fastapi_sqlalchemy import models
+from apitoolbox import models
 from tests.data.models import User
 
 
@@ -33,7 +33,7 @@ def test_dict_mixin(mocker):
     model = TestModel(id=1)
 
     mock_model_as_dict = mocker.patch(
-        "fastapi_sqlalchemy.models.mixins.model_as_dict")
+        "apitoolbox.models.mixins.model_as_dict")
     result = model.as_dict()
     assert mock_model_as_dict.call_args == mocker.call(model)
     assert result is mock_model_as_dict.return_value

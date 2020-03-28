@@ -2,6 +2,7 @@
 import os
 import logging
 import inspect
+from typing import Union
 
 import ssl
 import smtplib
@@ -11,10 +12,11 @@ import sqlalchemy.exc
 from itsdangerous import URLSafeTimedSerializer
 from pydantic import EmailStr
 
-from starlette.responses import HTMLResponse
+from starlette.datastructures import URL
+from starlette.responses import HTMLResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 
-from fastapi_sqlalchemy import models, utils
+from apitoolbox import models, utils, tz
 
 logger = logging.getLogger(__name__)
 
@@ -42,13 +44,14 @@ class RegisterEndpoint:
             self,
             user_cls,
             secret,
-            sender,
             *,
+            sender: str = None,
             form_template: str = FORM_TEMPLATE,
             confirmation_html_template: str = CONFIRMATION_HTML_TEMPLATE,
             confirmation_text_template: str = CONFIRMATION_TEXT_TEMPLATE,
             sent_template: str = SENT_TEMPLATE,
             form_action: str = "/register",
+            location: str = "/",
             salt: str = None,
             email_subject: str = "Email confirmation",
             email_server: str = "localhost",  # local smtp server
@@ -63,7 +66,6 @@ class RegisterEndpoint:
         assert inspect.isclass(user_cls)
         self.user_cls = user_cls
         self.secret = secret
-        self.sender = sender
 
         self.form_template = form_template
         self.confirmation_html_template = confirmation_html_template
@@ -71,7 +73,14 @@ class RegisterEndpoint:
         self.sent_template = sent_template
 
         self.form_action = form_action
+        self.location = location
         self.salt = salt
+
+        self.sender = sender
+        if self.email_confirmation_required:
+            logger.info("Registration requires email confirmation.")
+        else:
+            logger.info("Registration does not require email confirmation.")
 
         self.email_subject = email_subject
         self.email_server = email_server
@@ -85,6 +94,13 @@ class RegisterEndpoint:
             confirm_url += "/"
         self.confirm_url = confirm_url
 
+    @property
+    def email_confirmation_required(self) -> bool:
+        """ Whether or not email confirmation is required for
+        new users.
+        """
+        return self.sender is not None
+
     @staticmethod
     def render(
             path_or_template: str,
@@ -92,7 +108,7 @@ class RegisterEndpoint:
     ) -> str:
         """ Render the template using the passed parameters """
         kwargs.setdefault("error", "")
-        kwargs.setdefault("title", "FastAPI-SQLAlchemy")
+        kwargs.setdefault("title", "APIToolbox")
         kwargs.setdefault("modal_title", "Register")
         kwargs.setdefault("username", "")
         kwargs.setdefault("email", "")
@@ -145,7 +161,7 @@ class RegisterEndpoint:
         smtp.send_message(msg)
         smtp.close()
 
-    def send_email_confirmation(self, base_url, email, **kwargs):
+    def send_email_confirmation(self, base_url: str, email: str, **kwargs):
         """ Send the email with a confirmation link """
         logger.info("Sending email to %s from %s", email, self.sender)
 
@@ -187,42 +203,46 @@ class RegisterEndpoint:
 
     async def on_post(
             self,
-            base_url: str,
+            base_url: Union[str, URL],
             session: models.Session,
             username: str,
             email: str,
             password: str,
             confirm_password: str = None,
             **kwargs
-    ) -> HTMLResponse:
+    ) -> Union[HTMLResponse, RedirectResponse]:
         """ Handle POST requests """
 
+        base_url = str(base_url)
         email = EmailStr.validate(email)
 
-        def _register() -> (int, str):
+        def _register() -> Union[HTMLResponse, RedirectResponse]:
 
             try:
                 self.validate_password(password)
             except ValueError as ex:
-                return 400, self.render_form(error=str(ex), **kwargs)
+                content = self.render_form(error=str(ex), **kwargs)
+                return HTMLResponse(status_code=400, content=content)
 
             if confirm_password is not None:
                 # The only way for confirm_password to be None is if a
                 # standard form doesn't include it, otherwise the value is ""
                 if password != confirm_password:
-                    return 400, self.render_form(
+                    content = self.render_form(
                         error="The specified passwords do not match.",
                         **kwargs
                     )
+                    return HTMLResponse(status_code=400, content=content)
 
             user = self.user_cls.get_by_email(session, email)
             if user:
                 if user.username != username:
                     logger.info("Email '%s' already exists.", email)
                     # Is this an information leak?
-                    return 409, self.render_form(
+                    content = self.render_form(
                         error="That email address already exists.", **kwargs
                     )
+                    return HTMLResponse(status_code=409, content=content)
                 if user.confirmed:
                     logger.info("User '%s' already confirmed.", username)
                 else:
@@ -236,22 +256,28 @@ class RegisterEndpoint:
                 )
                 session.add(user)
 
+            if not self.email_confirmation_required:
+                user.confirmed_at = tz.utcnow()
+
             try:
                 session.commit()
             except sqlalchemy.exc.IntegrityError:
-                # pragma: no-cover
-                return 409, self.render_form(
+                content = self.render_form(
                     error="That username already exists.", **kwargs
                 )
+                return HTMLResponse(status_code=409, content=content)
+
+            if not self.email_confirmation_required:
+                return RedirectResponse(url=self.location, status_code=303)
 
             self.send_email_confirmation(
                 base_url, email, username=username, **kwargs
             )
 
-            return 200, self.render(
+            content = self.render(
                 self.sent_template,
                 username=username, email=email, **kwargs
             )
+            return HTMLResponse(status_code=200, content=content)
 
-        status_code, content = await run_in_threadpool(_register)
-        return HTMLResponse(status_code=status_code, content=content)
+        return await run_in_threadpool(_register)

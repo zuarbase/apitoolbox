@@ -1,6 +1,6 @@
 import pytest
 
-from fastapi_sqlalchemy import db_registry
+from apitoolbox import db_registry
 
 
 @pytest.fixture(name="mock_lock", autouse=True)
@@ -11,7 +11,7 @@ def fixture_mock_lock(mocker):
 @pytest.fixture(name="mock_create_engine")
 def fixture_mock_create_engine(mocker):
     return mocker.patch(
-        "fastapi_sqlalchemy.db_registry.create_engine",
+        "apitoolbox.db_registry.create_engine",
         side_effect=lambda url, **kwargs: mocker.Mock(url=url, **kwargs))
 
 

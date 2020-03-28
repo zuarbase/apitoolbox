@@ -1,10 +1,10 @@
-all: flake8 pylint test
+all: flake8 pylint coverage
 
 flake8: flake8_pkg flake8_tests
 .PHONY: flake8
 
 flake8_pkg:
-	flake8 fastapi_sqlalchemy
+	flake8 apitoolbox
 .PHONY: flake8_pkg
 
 flake8_tests:
@@ -15,7 +15,7 @@ pylint: pylint_pkg pylint_tests
 .PHONY: pylint
 
 pylint_pkg:
-	pylint fastapi_sqlalchemy
+	pylint apitoolbox
 .PHONY: pylint_pkg
 
 pylint_tests:
@@ -27,7 +27,7 @@ test:
 .PHONY: test
 
 coverage:
-	pytest --cov=fastapi_sqlalchemy --cov-report=term-missing --cov-fail-under=100 tests/
+	pytest --cov=apitoolbox --cov-report=term-missing --cov-fail-under=100 tests/
 .PHONY: coverage
 
 pyenv:

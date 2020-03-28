@@ -1,6 +1,6 @@
 import pytest
 
-from fastapi_sqlalchemy import types
+from apitoolbox import types
 
 
 def test_query_types_functional(app, client):

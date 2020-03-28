@@ -2,12 +2,12 @@
 import os
 import logging
 import inspect
-from typing import Any, Optional
+from typing import Optional, Union
 
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from fastapi_sqlalchemy import tz, models, utils
+from apitoolbox import tz, models, utils
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ class LoginEndpoint:
             jwt_algorithm: str = "HS256",
             form_action: str = "/login",
             require_confirmation: bool = False,
+            register_url: str = None
     ):
         assert inspect.isclass(user_cls)
         self.secret = secret
@@ -46,14 +47,24 @@ class LoginEndpoint:
         self.jwt_algorithm = jwt_algorithm
         self.form_action = form_action
         self.require_confirmation = require_confirmation
+        self.register_url = register_url
 
     def render(self, **kwargs) -> str:
         """ Render the template using the passed parameters """
         kwargs.setdefault("username", "")
         kwargs.setdefault("error", "")
         kwargs.setdefault("form_action", self.form_action)
-        kwargs.setdefault("modal_title", "Login to your Account")
-        kwargs.setdefault("title", "FastAPI-SQLAlchemy")
+        kwargs.setdefault("modal_title", "Login")
+        kwargs.setdefault("title", "APIToolbox")
+
+        kwargs.setdefault("register_url", self.register_url)
+        if self.register_url:
+            register_link = "<a href=\"{url}\">Register</a>".format(
+                url=self.register_url
+            )
+            kwargs.setdefault("register_link", register_link)
+        else:
+            kwargs.setdefault("register_link", "")
 
         return utils.render(self.template, **kwargs)
 
@@ -107,7 +118,7 @@ class LoginEndpoint:
             password: str,
             location: str = None,
             **kwargs
-    ) -> Any:
+    ) -> Union[HTMLResponse, JSONResponse]:
         """ Handle POST requests """
         user_data = await self.authenticate(
             session,

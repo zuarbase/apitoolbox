@@ -3,11 +3,11 @@ from string import Template
 
 import pytest
 
-from fastapi_sqlalchemy import utils
+from apitoolbox import utils
 
 
 def test_ordered_uuid(mocker):
-    ordered_uuid = mocker.patch("fastapi_sqlalchemy.utils.OrderedUUID")
+    ordered_uuid = mocker.patch("apitoolbox.utils.OrderedUUID")
 
     value = uuid.uuid4()
     result = utils.ordered_uuid(value)
@@ -16,7 +16,7 @@ def test_ordered_uuid(mocker):
 
 
 def test_ordered_uuid_defaults(mocker):
-    ordered_uuid = mocker.patch("fastapi_sqlalchemy.utils.OrderedUUID")
+    ordered_uuid = mocker.patch("apitoolbox.utils.OrderedUUID")
 
     expected_result = "mock-uuid-1"
     mocker.patch("uuid.uuid1", return_value=expected_result)

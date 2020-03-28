@@ -3,7 +3,7 @@ from datetime import datetime
 import pytz
 import tzlocal
 
-from fastapi_sqlalchemy import tz
+from apitoolbox import tz
 
 LOCAL_TZ = tzlocal.get_localzone()
 

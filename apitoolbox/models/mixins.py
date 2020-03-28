@@ -4,7 +4,7 @@ import uuid
 import sqlalchemy
 from sqlalchemy.ext.declarative import declared_attr
 
-from fastapi_sqlalchemy import tz
+from apitoolbox import tz
 from .types import GUID
 from .base import Session, model_as_dict
 

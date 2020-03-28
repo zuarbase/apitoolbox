@@ -1,4 +1,4 @@
-from fastapi_sqlalchemy import models
+from apitoolbox import models
 
 
 class User(models.User):

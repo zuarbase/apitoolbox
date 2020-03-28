@@ -7,7 +7,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from fastapi_sqlalchemy import models
+from apitoolbox import models
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 
@@ -44,7 +44,7 @@ def session_fixture(engine):
 @pytest.fixture(scope="function", name="app")
 def app_fixture(engine):
     app = FastAPI(
-        title="fastapi_sqlalchemy",
+        title="apitoolbox",
         version="0.0.0"
     )
     return app

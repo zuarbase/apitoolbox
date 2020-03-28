@@ -1,14 +1,19 @@
 from setuptools import setup, find_packages
 
-PACKAGE = "fastapi-sqlalchemy"
+PACKAGE = "apitoolbox"
 VERSION = "0.9.0"
+
+URL = "https://github.com/zuarbase/" + PACKAGE
+DOWNLOAD_URL= URL + "/archive/v" + VERSION + ".tar.gz"
+
 
 setup(
     name=PACKAGE,
     version=VERSION,
     author="Matthew Laue",
     author_email="matt@zuar.com",
-    url="https://github.com/zuarbase/fastapi-sqlalchemy",
+    url=URL,
+    download_url=DOWNLOAD_URL,
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     install_requires=[

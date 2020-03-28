@@ -3,7 +3,7 @@ from fastapi import Depends
 
 from starlette.requests import Request
 
-from fastapi_sqlalchemy import middleware, utils
+from apitoolbox import middleware, utils
 
 
 def test_middleware_upstream(session, app, client):

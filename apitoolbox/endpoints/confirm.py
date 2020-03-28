@@ -8,7 +8,7 @@ from itsdangerous import URLSafeTimedSerializer, BadData
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from fastapi_sqlalchemy import models, tz, utils
+from apitoolbox import models, tz, utils
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class ConfirmEndpoint:
     ) -> str:
         """ Render the template using the passed parameters """
         kwargs.setdefault("error", "")
-        kwargs.setdefault("title", "FastAPI-SQLAlchemy")
+        kwargs.setdefault("title", "APIToolbox")
         kwargs.setdefault("email", "")
 
         return utils.render(self.template, **kwargs)

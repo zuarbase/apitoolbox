@@ -3,7 +3,7 @@ from datetime import datetime
 import fastapi
 from itsdangerous import URLSafeTimedSerializer
 
-from fastapi_sqlalchemy import endpoints, models
+from apitoolbox import endpoints, models
 
 SENDER = "user@example.com"
 BASE_URL = "http://localhost"
@@ -18,8 +18,7 @@ class User(
 
 def test_register_get(session, app, client):
     endpoint = endpoints.RegisterEndpoint(
-        User, secret="s0secret", sender=SENDER,
-        form_template="<html>${title}</html>",
+        User, secret="s0secret", form_template="<html>${title}</html>",
     )
 
     @app.get("/register")
@@ -28,7 +27,7 @@ def test_register_get(session, app, client):
 
     res = client.get("/register")
     assert res.status_code == 200
-    assert res.text == "<html>FastAPI-SQLAlchemy</html>"
+    assert res.text == "<html>APIToolbox</html>"
 
 
 def test_register_post(session, app, client, mocker):
@@ -59,12 +58,11 @@ def test_register_post(session, app, client, mocker):
     assert res.text == f"<html>{recipient}</html>"
 
 
-def test_register_post_no_confirmation(session, app, client, mocker):
+def test_register_post_password_not_confirmed(session, app, client):
     endpoint = endpoints.RegisterEndpoint(
-        User, secret="s0secret", sender=SENDER,
+        User, secret="s0secret",
         form_template="<html>${error}</html>"
     )
-    mocker.patch.object(endpoint, "send_email_confirmation")
 
     @app.post("/register")
     async def _post(
@@ -348,3 +346,31 @@ def test_send_message_no_ssl(mocker):
         mocker.call.send_message(msg),
         mocker.call.close(),
     ]
+
+
+def test_register_post_no_confirmation_email(session, app, client):
+    endpoint = endpoints.RegisterEndpoint(
+        User, secret="s0secret",
+        form_template="<html>${error}</html>"
+    )
+
+    @app.post("/register")
+    async def _post(
+            username: str = fastapi.Form(None),
+            password: str = fastapi.Form(None),
+            confirm_password: str = fastapi.Form(None),
+            email: str = fastapi.Form(None),
+    ):
+        return await endpoint.on_post(
+            BASE_URL, session,
+            username=username, email=email,
+            password=password, confirm_password=confirm_password
+        )
+
+    res = client.post("/register", data={
+        "username": "testuser",
+        "password": "passw0rd",
+        "email": "recipient@example.com",
+    })
+    assert res.status_code == 303
+    assert res.headers.get("location") == "/"

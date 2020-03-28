@@ -1,4 +1,4 @@
-# FastAPI-SQLAlchemy
+# APIToolbox
 Full-stack, asynchronous Python3 framework.
 
 ## Design goals
@@ -10,9 +10,9 @@ Full-stack, asynchronous Python3 framework.
 ```python
 from fastapi import FastAPI, Request
 
-from fastapi_sqlalchemy import crud, db_registry
-from fastapi_sqlalchemy.middleware import SessionMiddleware
-from fastapi_sqlalchemy.models import BASE, Session, User
+from apitoolbox import crud, db_registry
+from apitoolbox.middleware import SessionMiddleware
+from apitoolbox.models import BASE, Session, User
 
 DATABASE_URL = "sqlite:///sqlite.db?check_same_thread=False"
 

@@ -1,4 +1,4 @@
-from fastapi_sqlalchemy import endpoints
+from apitoolbox import endpoints
 
 
 def test_logout_post(engine, session, app, client):

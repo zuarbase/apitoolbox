@@ -5,7 +5,7 @@ from starlette.datastructures import State
 from starlette.requests import Request
 from starlette.middleware.authentication import AuthenticationMiddleware
 
-from fastapi_sqlalchemy import auth, middleware, models
+from apitoolbox import auth, middleware, models
 
 
 class User(

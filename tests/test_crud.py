@@ -6,8 +6,8 @@ import sqlalchemy.exc
 from pydantic import PositiveInt
 from starlette.exceptions import HTTPException
 
-from fastapi_sqlalchemy import crud
-from fastapi_sqlalchemy.types import NonNegativeInt
+from apitoolbox import crud
+from apitoolbox.types import NonNegativeInt
 
 from tests.data.people import (
     load_people, Person, PersonRequestModel, PEOPLE_DATA
@@ -20,9 +20,9 @@ def fixture_mock_sqlalchemy_filters(mocker):
         return query
 
     apply_filters = mocker.patch(
-        "fastapi_sqlalchemy.crud.apply_filters", side_effect=__query)
+        "apitoolbox.crud.apply_filters", side_effect=__query)
     apply_sort = mocker.patch(
-        "fastapi_sqlalchemy.crud.apply_sort", side_effect=__query)
+        "apitoolbox.crud.apply_sort", side_effect=__query)
     return apply_filters, apply_sort
 
 

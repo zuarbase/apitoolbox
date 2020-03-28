@@ -3,7 +3,7 @@ import uuid
 
 import sqlalchemy
 
-from fastapi_sqlalchemy import tz
+from apitoolbox import tz
 
 from .base import BASE
 from .types import GUID

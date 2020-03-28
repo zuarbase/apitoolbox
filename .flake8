@@ -2,7 +2,9 @@
 max-line-length = 80
 inline-quotes = "
 exclude = .git,node_modules,__init__.py,DEBIAN
-ignore = 
+ignore =
+# change outer quotes to avoid escaping inner quotes
+  Q003,
 # too many leading '#' for block comment
   E266,
 # comparison to None should be 'if cond is not None:'

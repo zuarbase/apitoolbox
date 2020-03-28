@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, MetaData, Table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.declarative import declarative_base
 
-from fastapi_sqlalchemy.models import types
+from apitoolbox.models import types
 
 
 def test_guid_type_functional(session):

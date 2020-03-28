@@ -5,7 +5,7 @@ For convenience datetime related modules (e.g. dateutil.parser, pytz, etc) are
 imported here so they can be accessed using this module.
 
 Usage:
->>> from fastapi_sqlalchemy import tz
+>>> from apitoolbox import tz
 >>> dt1 = tz.utcnow()
 >>> dt2 = tz.utcdatetime(2015, 1, 2, 1, 2, 3)
 >>> dt2 = dt2.astimezone(tz.LOCAL)

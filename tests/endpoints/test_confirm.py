@@ -2,7 +2,7 @@ from datetime import datetime
 
 from itsdangerous import URLSafeTimedSerializer
 
-from fastapi_sqlalchemy import endpoints, models
+from apitoolbox import endpoints, models
 
 
 class User(

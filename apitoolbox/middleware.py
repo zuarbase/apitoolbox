@@ -9,8 +9,8 @@ from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from fastapi_sqlalchemy import db_registry
-from fastapi_sqlalchemy.models import Session
+from apitoolbox import db_registry
+from apitoolbox.models import Session
 
 
 PAYLOAD_HEADER_PREFIX = "x-payload-"
@@ -24,7 +24,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
     Close the session after each request, thus rolling back any
     not committed transactions.
 
-    Given bind will be added to `fastapi_sqlalchemy.db_registry` and so can be
+    Given bind will be added to `apitoolbox.db_registry` and so can be
     accessed from there.
     """
     def __init__(

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.types import CHAR
 from pydantic import BaseModel, PositiveInt, constr
 
-from fastapi_sqlalchemy import models
+from apitoolbox import models
 
 PEOPLE_DATA = [
     {"name": "alice", "order": 1, "gender": "F", "age": 32},

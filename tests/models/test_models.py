@@ -6,9 +6,9 @@ import pytest
 import sqlalchemy.orm
 import sqlalchemy.ext.declarative
 
-from fastapi_sqlalchemy import models
-from fastapi_sqlalchemy.models import base
-from fastapi_sqlalchemy.models.base import MODEL_MAPPING
+from apitoolbox import models
+from apitoolbox.models import base
+from apitoolbox.models.base import MODEL_MAPPING
 
 from tests.data.models import User, Group, Permission
 
@@ -222,7 +222,7 @@ def test_base_as_dict(mocker):
     model = TestModel(id=1)
 
     mock_model_as_dict = mocker.patch(
-        "fastapi_sqlalchemy.models.base.model_as_dict")
+        "apitoolbox.models.base.model_as_dict")
     result = model.as_dict()
     assert mock_model_as_dict.call_args == mocker.call(model)
     assert result is mock_model_as_dict.return_value

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import fastapi
 import jwt
 
-from fastapi_sqlalchemy import endpoints
+from apitoolbox import endpoints
 
 from tests.data.models import User
 
@@ -11,7 +11,7 @@ from tests.data.models import User
 def test_login_get(session, app, client):
     template = "<html>${title}</html>"
     endpoint = endpoints.LoginEndpoint(
-        User, secret="s0secret", template=template
+        User, secret="s0secret", template=template, register_url="/register"
     )
 
     @app.get("/login")
@@ -20,12 +20,12 @@ def test_login_get(session, app, client):
 
     res = client.get("/login")
     assert res.status_code == 200
-    assert res.text == "<html>FastAPI-SQLAlchemy</html>"
+    assert res.text == "<html>APIToolbox</html>"
 
 
 def test_login_post(mocker, engine, session, app, client):
     now_dt = datetime.utcnow()
-    mocker.patch("fastapi_sqlalchemy.tz.utcnow", return_value=now_dt)
+    mocker.patch("apitoolbox.tz.utcnow", return_value=now_dt)
 
     user = User(username="alice")
     user.password = "test123"

@@ -1,11 +1,11 @@
 import pytest
 
-from fastapi_sqlalchemy.models import base, events
+from apitoolbox.models import base, events
 
 
 @pytest.fixture(name="mapper")
 def fixture_model_mapping(mocker) -> dict:
-    return mocker.patch("fastapi_sqlalchemy.models.events.MODEL_MAPPING", {})
+    return mocker.patch("apitoolbox.models.events.MODEL_MAPPING", {})
 
 
 @pytest.mark.parametrize("table,relation", (
