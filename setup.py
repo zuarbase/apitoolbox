@@ -37,6 +37,7 @@ setup(
         "sqlalchemy-filters",
         "tzlocal",
         "itsdangerous",
+        "uvicorn",
     ],
     extras_require={
         "dev": [
