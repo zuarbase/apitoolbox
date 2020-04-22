@@ -40,12 +40,14 @@ def _after_configured():
         if not hasattr(user_cls, "groups"):
             user_cls.groups = relationship(
                 group_cls,
-                secondary=group_membership_table
+                secondary=group_membership_table,
+                order_by=group_cls.id
             )
         if not hasattr(group_cls, "users"):
             group_cls.users = relationship(
                 user_cls,
-                secondary=group_membership_table
+                secondary=group_membership_table,
+                order_by=user_cls.id
             )
 
     user_permissions_table = associations.get("user_permissions")
@@ -64,12 +66,14 @@ def _after_configured():
         if not hasattr(user_cls, "user_permissions"):
             user_cls.user_permissions = relationship(
                 permission_cls,
-                secondary=user_permissions_table
+                secondary=user_permissions_table,
+                order_by=permission_cls.id
             )
         if not hasattr(permission_cls, "users"):
             permission_cls.users = relationship(
                 user_cls,
-                secondary=user_permissions_table
+                secondary=user_permissions_table,
+                order_by=user_cls.id
             )
 
     group_permissions_table = associations.get("group_permissions")
@@ -88,12 +92,14 @@ def _after_configured():
         if not hasattr(group_cls, "permissions"):
             group_cls.permissions = relationship(
                 permission_cls,
-                secondary=group_permissions_table
+                secondary=group_permissions_table,
+                order_by=permission_cls.id
             )
         if not hasattr(permission_cls, "groups"):
             permission_cls.groups = relationship(
                 group_cls,
-                secondary=group_permissions_table
+                secondary=group_permissions_table,
+                order_by=group_cls.id
             )
 
     def _permissions(user):
