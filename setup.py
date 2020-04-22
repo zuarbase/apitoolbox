@@ -36,6 +36,7 @@ setup(
         "sqlalchemy-filters",
         "tzlocal",
         "itsdangerous",
+        "uvicorn",
     ],
     extras_require={
         "dev": [
@@ -50,7 +51,6 @@ setup(
             "flake8-quotes",
         ],
         "prod": [
-            "uvicorn",
             "gunicorn",
         ]
     }
