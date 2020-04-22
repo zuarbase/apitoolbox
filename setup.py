@@ -52,7 +52,6 @@ setup(
             "flake8-quotes",
         ],
         "prod": [
-            "uvicorn",
             "gunicorn",
         ]
     }
