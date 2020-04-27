@@ -49,6 +49,17 @@ def test_auth(session, app, client):
             "scopes": request.auth.scopes
         }
 
+    @app.delete(
+        "/me",
+        dependencies=[
+            Depends(auth.validate_authenticated),
+            Depends(auth.validate_admin)
+        ],
+        status_code=204
+    )
+    def _delete():
+        return
+
     app.add_middleware(
         AuthenticationMiddleware, backend=auth.PayloadAuthBackend(user_cls=User)
     )
@@ -81,6 +92,20 @@ def test_auth(session, app, client):
         "scopes": ["test-scope", "write"]
     }
 
+    # Test /me - auth + admin scope required
+    res = client.delete("/me", headers={
+        "X-Payload-username": user.username,
+        "X-Payload-permissions": "*"
+    })
+    assert res.status_code == 204, res.text
+
+    # Test /me - failed - no admin scope
+    res = client.delete("/me", headers={
+        "X-Payload-username": user.username,
+        "X-Payload-permissions": "test-scope"
+    })
+    assert res.status_code == 403
+
 
 def test_auth_not_authenticated(session, app, client):
 
@@ -100,12 +125,13 @@ def test_auth_not_authenticated(session, app, client):
     payload_prefix = middleware.UpstreamPayloadMiddleware.PAYLOAD_HEADER_PREFIX
 
     res = client.get("/me", headers={
-        f"{payload_prefix}username": "nonexistent_user"
+        f"{payload_prefix}username": "nonexistent_user",
+        f"{payload_prefix}permissions": "write"
     })
     assert res.status_code == 401
 
 
-def test_auth_not_authorized(session, app, client):
+def test_auth_all_scopes(session, app, client):
     user = User(username="testuser")
     session.add(user)
     session.commit()
@@ -186,7 +212,7 @@ def test_payload_auth_backend():
     assert backend.admin_scope == "admin"
 
 
-def test_payload_auth_no_user_cls(mocker, loop):
+def test_payload_auth_backend_no_user_cls(mocker, loop):
     expected_username = "user1"
 
     backend = auth.PayloadAuthBackend()

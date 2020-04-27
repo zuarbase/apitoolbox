@@ -127,3 +127,16 @@ def validate_any_scope(request: Request, scopes: SecurityScopes):
     req_scopes = request.auth.scopes
     if not any(scope in req_scopes for scope in scopes.scopes):
         raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+
+def validate_admin(request: Request):
+    """Validate that `ADMIN_SCOPE` exists in 'request.auth.scopes'.
+
+    Usage:
+        >>> from fastapi import Depends
+        >>> @app.get("/admin_info", dependencies=[
+        ...    Depends(validate_admin)
+        ... ])
+    """
+    admin_scopes = SecurityScopes(scopes=[ADMIN_SCOPE])
+    validate_any_scope(request, admin_scopes)
