@@ -1,55 +1,40 @@
 """ authentication and authorization """
 import logging
-from typing import Container, Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List
 
-from fastapi import Request
-from fastapi import status
-from starlette.authentication import (
-    AuthenticationBackend, AuthCredentials, SimpleUser
-)
+from fastapi import HTTPException, Request, status
+from fastapi.security import SecurityScopes
+from starlette.authentication import SimpleUser
 from starlette.concurrency import run_in_threadpool
-from starlette.exceptions import HTTPException
-from starlette.requests import HTTPConnection
 
 ADMIN_SCOPE = "*"
 
 logger = logging.getLogger(__name__)
 
 
-class PayloadAuthBackend(AuthenticationBackend):
+class PayloadAuth:
     """ Get auth information from the request payload """
 
     def __init__(
             self,
             user_cls: type = None,
             admin_scope: str = ADMIN_SCOPE,
+            auto_error: bool = True
     ):
         super().__init__()
         self.user_cls = user_cls
         self.admin_scope = admin_scope
+        self.auto_error = auto_error
 
-    async def scopes(self, payload: Dict[str, str]) -> List[str]:
-        """ Return the list of scopes """
-        if "scopes" in payload:
-            scopes = payload["scopes"]
-        elif "permissions" in payload:
-            scopes = payload["permissions"]
-        else:
-            return []
+    async def __call__(self, request: Request):
+        user = await self.get_user(request)
+        if user is None and self.auto_error:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+        return user
 
-        if isinstance(scopes, str):
-            scopes = [token.strip() for token in scopes.split(",")]
-
-        if self.admin_scope and self.admin_scope in scopes:
-            return [self.admin_scope]
-
-        return scopes
-
-    async def authenticate(
-            self, conn: HTTPConnection
-    ) -> Optional[Tuple["AuthCredentials", "BaseUser"]]:
+    async def get_user(self, request: Request):
         try:
-            payload = conn.state.payload
+            payload = request.state.payload
         except AttributeError:
             raise RuntimeError(
                 "Missing 'request.state.payload': "
@@ -62,7 +47,7 @@ class PayloadAuthBackend(AuthenticationBackend):
 
         if self.user_cls:
             try:
-                session = conn.state.session
+                session = request.state.session
             except AttributeError:
                 raise RuntimeError(
                     "Missing 'request.state.session': "
@@ -77,114 +62,58 @@ class PayloadAuthBackend(AuthenticationBackend):
                 return
         else:
             user = SimpleUser(username=username)
+        return user
 
-        scopes = await self.scopes(payload)
-        return AuthCredentials(scopes), user
+    def get_scopes(self, payload: Dict[str, str]) -> List[str]:
+        """ Return the list of scopes """
+        if "scopes" in payload:
+            scopes = payload["scopes"]
+        elif "permissions" in payload:
+            scopes = payload["permissions"]
+        else:
+            return []
 
+        if isinstance(scopes, str):
+            scopes = [token.strip() for token in scopes.split(",")]
 
-def validate_authenticated(request: Request):
-    """Validate that 'request.user' is authenticated.
+        if self.admin_scope in scopes:
+            scopes = [self.admin_scope]
 
-    Usage:
-        >>> from fastapi import Depends
-        >>> @app.get("/my_name", dependencies=[
-        ...    Depends(validate_authenticated)
-        ... ])
-    """
-    user: SimpleUser = getattr(request, "user", None)
-    if user is not None and not user.is_authenticated:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED)
+        return scopes
 
-
-class ScopeValidator:
-    """Base class for scope validators."""
-
-    def __init__(
-            self,
-            scopes: Sequence[str],
-            admin_scope: str = ADMIN_SCOPE
-    ):
-        self.scopes = scopes
-        self.admin_scope = admin_scope
-
-    def __call__(self, request: Request):
-        validate_authenticated(request)
-
-    def is_admin(self, req_scopes: Container[str]) -> bool:
-        """Check if given scopes contains admin scope."""
+    def is_admin(self, req_scopes: List[str]) -> bool:
+        """Check if given scopes contain admin scope."""
         return self.admin_scope and self.admin_scope in req_scopes
 
+    async def all_scopes(self, request: Request, scopes: SecurityScopes):
+        user = await self(request)
 
-class AllScopesValidator(ScopeValidator):
-    """Validate that all defined scopes exist in 'request.auth.scopes'.
+        req_scopes = self.get_scopes(request.state.payload)
+        if self.is_admin(req_scopes) or all(
+                scope in req_scopes
+                for scope in scopes.scopes
+        ):
+            return user
 
-    Usage:
-        >>> from fastapi import Depends
-        >>> @app.get("/my_name", dependencies=[
-        ...    Depends(AllScopesValidator(
-        ...        scopes=["read", "write"],
-        ...        admin_scope="admin"
-        ...    ))
-        ... ])
-    """
-    def __call__(self, request: Request):
-        super().__call__(request)
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
 
-        req_scopes = request.auth.scopes
+    async def any_scope(self, request: Request, scopes: SecurityScopes):
+        user = await self(request)
 
+        req_scopes = self.get_scopes(request.state.payload)
+        if self.is_admin(req_scopes) or any(
+                scope in req_scopes
+                for scope in scopes.scopes
+        ):
+            return user
+
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    async def admin(self, request: Request):
+        user = await self(request)
+
+        req_scopes = self.get_scopes(request.state.payload)
         if self.is_admin(req_scopes):
-            return
+            return user
 
-        if not all(scope in req_scopes for scope in self.scopes):
-            raise HTTPException(status.HTTP_403_FORBIDDEN)
-
-
-class AnyScopeValidator(ScopeValidator):
-    """Validate that at least one defined scope exists in 'request.auth.scopes'.
-
-    Usage:
-        >>> from fastapi import Depends
-        >>> @app.get("/my_name", dependencies=[
-        ...    Depends(AnyScopeValidator(
-        ...        scopes=["read", "write"],
-        ...        admin_scope="admin"
-        ...    ))
-        ... ])
-    """
-    def __call__(self, request: Request):
-        super().__call__(request)
-
-        req_scopes = request.auth.scopes
-
-        if self.is_admin(req_scopes):
-            return
-
-        if not any(scope in req_scopes for scope in self.scopes):
-            raise HTTPException(status.HTTP_403_FORBIDDEN)
-
-
-class AdminValidator(ScopeValidator):
-    """Validate that admin scope exists in 'request.auth.scopes'.
-
-    Usage:
-        >>> from fastapi import Depends
-        >>> @app.get("/my_name", dependencies=[
-        ...    Depends(AdminValidator(
-        ...        admin_scope="admin"
-        ...    ))
-        ... ])
-    """
-
-    def __init__(
-            self,
-            admin_scope: str = ADMIN_SCOPE
-    ):
-        super().__init__(scopes=[], admin_scope=admin_scope)
-
-    def __call__(self, request: Request):
-        super().__call__(request)
-
-        req_scopes = request.auth.scopes
-
-        if not self.is_admin(req_scopes):
-            raise HTTPException(status.HTTP_403_FORBIDDEN)
+        raise HTTPException(status.HTTP_403_FORBIDDEN)

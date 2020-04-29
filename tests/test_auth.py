@@ -1,9 +1,7 @@
 import pytest
-from fastapi import Depends
+from fastapi import Depends, Security
 from starlette.authentication import SimpleUser
 from starlette.datastructures import State
-from starlette.middleware.authentication import AuthenticationMiddleware
-from starlette.requests import Request
 
 from apitoolbox import auth, middleware, models
 
@@ -21,69 +19,40 @@ def test_auth(session, app, client):
     session.commit()
 
     admin_scope = "admin"
+    payload_auth = auth.PayloadAuth(user_cls=User, admin_scope=admin_scope)
 
     @app.get("/ping")
     def _ping():
         return "pong"
 
-    @app.get(
-        "/me",
-        dependencies=[
-            Depends(auth.validate_authenticated),
-        ]
-    )
-    def _get(request: Request):
-        return {
-            "username": request.user.username,
-            "scopes": request.auth.scopes
-        }
+    @app.get("/me")
+    def _get(user_: User = Depends(payload_auth)):
+        return {"username": user_.username}
 
-    @app.get(
-        "/scopes/all",
-        dependencies=[
-            Depends(auth.AllScopesValidator(
-                scopes=["read", "write", "me"],
-                admin_scope=admin_scope
-            ))
-        ]
-    )
-    def _scopes_all(request: Request):
-        return {
-            "username": request.user.username,
-            "scopes": request.auth.scopes
-        }
+    @app.get("/scopes/all")
+    def _scopes_all(
+            user_: User = Security(
+                payload_auth.all_scopes,
+                scopes=["read", "write", "me"]
+            )
+    ):
+        return {"username": user_.username}
 
-    @app.get(
-        "/scopes/any",
-        dependencies=[
-            Depends(auth.AnyScopeValidator(
-                scopes=["read", "write"],
-                admin_scope=admin_scope
-            ))
-        ]
-    )
-    def _scopes_any(request: Request):
-        return {
-            "username": request.user.username,
-            "scopes": request.auth.scopes
-        }
+    @app.get("/scopes/any")
+    def _scopes_any(
+            user_: User = Security(
+                payload_auth.any_scope,
+                scopes=["read", "write"]
+            )
+    ):
+        return {"username": user_.username}
 
-    @app.get(
-        "/admin",
-        dependencies=[
-            Depends(auth.AdminValidator(admin_scope=admin_scope))
-        ]
-    )
-    def _admin(request: Request):
-        return {
-            "username": request.user.username,
-            "scopes": request.auth.scopes
-        }
+    @app.get("/admin")
+    def _admin(
+            user_: User = Depends(payload_auth.admin)
+    ):
+        return {"username": user_.username}
 
-    app.add_middleware(
-        AuthenticationMiddleware,
-        backend=auth.PayloadAuthBackend(user_cls=User, admin_scope=admin_scope)
-    )
     app.add_middleware(middleware.UpstreamPayloadMiddleware)
     app.add_middleware(middleware.SessionMiddleware, bind=session.bind)
 
@@ -93,6 +62,10 @@ def test_auth(session, app, client):
     res = client.get("/ping")
     assert res.status_code == 200, res.text
     assert res.text == '"pong"'
+
+    # Test /me - no payload
+    res = client.get("/me", headers={})
+    assert res.status_code == 401
 
     # Test /me - not authenticated
     res = client.get("/me", headers={
@@ -106,8 +79,7 @@ def test_auth(session, app, client):
     })
     assert res.status_code == 200, res.text
     assert res.json() == {
-        "username": user.username,
-        "scopes": []
+        "username": user.username
     }
 
     # Test /scopes/all - not authenticated
@@ -131,8 +103,7 @@ def test_auth(session, app, client):
     })
     assert res.status_code == 200, res.text
     assert res.json() == {
-        "username": user.username,
-        "scopes": ["read", "write", "me"]
+        "username": user.username
     }
 
     # Test /scopes/all - admin scope - success
@@ -142,8 +113,7 @@ def test_auth(session, app, client):
     })
     assert res.status_code == 200, res.text
     assert res.json() == {
-        "username": user.username,
-        "scopes": [admin_scope]
+        "username": user.username
     }
 
     # Test /scopes/any - not authenticated
@@ -165,8 +135,7 @@ def test_auth(session, app, client):
     })
     assert res.status_code == 200
     assert res.json() == {
-        "username": user.username,
-        "scopes": ["read"]
+        "username": user.username
     }
 
     # Test /scopes/any - admin scope - success
@@ -176,8 +145,7 @@ def test_auth(session, app, client):
     })
     assert res.status_code == 200
     assert res.json() == {
-        "username": user.username,
-        "scopes": [admin_scope]
+        "username": user.username
     }
 
     # Test /admin - failed - no admin scope
@@ -194,74 +162,66 @@ def test_auth(session, app, client):
     })
     assert res.status_code == 200, res.text
     assert res.json() == {
-        "username": user.username,
-        "scopes": [admin_scope]
+        "username": user.username
     }
 
 
-def test_payload_auth_backend():
-    backend = auth.PayloadAuthBackend(user_cls=User, admin_scope="admin")
-    assert backend.user_cls is User
-    assert backend.admin_scope == "admin"
-
-
-def test_payload_auth_backend_no_user_cls(mocker, loop):
+def test_payload_auth_no_user_cls(mocker, loop):
     expected_username = "user1"
 
-    backend = auth.PayloadAuthBackend()
+    backend = auth.PayloadAuth()
 
     mock_conn = mocker.Mock(state=State({
         "payload": {"username": expected_username}
     }))
-    result = loop.run_until_complete(backend.authenticate(mock_conn))
-    assert result is not None
-    assert len(result) == 2
-    assert isinstance(result[1], SimpleUser)
-    assert result[1].username == expected_username
+    result = loop.run_until_complete(backend(mock_conn))
+    assert isinstance(result, SimpleUser)
+    assert result.username == expected_username
+    assert result.is_authenticated is True
 
 
-def test_payload_auth_backend_scopes(loop):
-    backend = auth.PayloadAuthBackend(admin_scope="admin")
+def test_payload_auth_scopes(loop):
+    backend = auth.PayloadAuth(admin_scope="admin")
 
-    result = loop.run_until_complete(backend.scopes({
+    result = backend.get_scopes({
         "scopes": "read, write"
-    }))
+    })
     assert result == ["read", "write"]
 
-    result = loop.run_until_complete(backend.scopes({
+    result = backend.get_scopes({
         "permissions": "read, write"
-    }))
+    })
     assert result == ["read", "write"]
 
-    result = loop.run_until_complete(backend.scopes({}))
+    result = backend.get_scopes({})
     assert result == []
 
-    result = loop.run_until_complete(backend.scopes({
+    result = backend.get_scopes({
         "permissions": "admin"
-    }))
+    })
     assert result == ["admin"]
 
 
 def test_payload_auth_backend_missing_payload_error(mocker, loop):
-    backend = auth.PayloadAuthBackend()
+    backend = auth.PayloadAuth()
 
     mock_conn = mocker.Mock(state=State())
     with pytest.raises(RuntimeError) as exc_info:
-        loop.run_until_complete(backend.authenticate(mock_conn))
+        loop.run_until_complete(backend(mock_conn))
 
     error_msg = "Missing 'request.state.payload': " \
                 "try adding 'middleware.UpstreamPayloadMiddleware'"
     assert str(exc_info.value) == error_msg
 
 
-def test_payload_auth_backend_missing_session_error(mocker, loop):
-    backend = auth.PayloadAuthBackend(user_cls=User)
+def test_payload_auth_missing_session_error(mocker, loop):
+    backend = auth.PayloadAuth(user_cls=User)
 
     mock_conn = mocker.Mock(state=State({
         "payload": {"username": "user1"}
     }))
     with pytest.raises(RuntimeError) as exc_info:
-        loop.run_until_complete(backend.authenticate(mock_conn))
+        loop.run_until_complete(backend(mock_conn))
 
     error_msg = "Missing 'request.state.session': " \
                 "try adding 'middleware.SessionMiddleware'"
