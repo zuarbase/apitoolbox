@@ -1,9 +1,9 @@
 import pytest
-from fastapi import Depends, Security
+from fastapi import Depends
 from starlette.authentication import SimpleUser
 from starlette.datastructures import State
-from starlette.requests import Request
 from starlette.middleware.authentication import AuthenticationMiddleware
+from starlette.requests import Request
 
 from apitoolbox import auth, middleware, models
 
@@ -20,6 +20,8 @@ def test_auth(session, app, client):
     session.add(user)
     session.commit()
 
+    admin_scope = "admin"
+
     @app.get("/ping")
     def _ping():
         return "pong"
@@ -30,180 +32,171 @@ def test_auth(session, app, client):
             Depends(auth.validate_authenticated),
         ]
     )
-    async def _get(request: Request):
+    def _get(request: Request):
         return {
-            "user": request.user.as_dict(),
+            "username": request.user.username,
             "scopes": request.auth.scopes
         }
 
-    @app.post(
-        "/me/scopes",
+    @app.get(
+        "/scopes/all",
         dependencies=[
-            Depends(auth.validate_authenticated),
-            Security(auth.validate_all_scopes, scopes=["test-scope", "write"])
+            Depends(auth.AllScopesValidator(
+                scopes=["read", "write", "me"],
+                admin_scope=admin_scope
+            ))
         ]
     )
-    def _post(request: Request, ):
+    def _scopes_all(request: Request):
         return {
-            "user": request.user.as_dict(),
+            "username": request.user.username,
             "scopes": request.auth.scopes
         }
 
-    @app.delete(
-        "/me",
+    @app.get(
+        "/scopes/any",
         dependencies=[
-            Depends(auth.validate_authenticated),
-            Depends(auth.validate_admin)
-        ],
-        status_code=204
+            Depends(auth.AnyScopeValidator(
+                scopes=["read", "write"],
+                admin_scope=admin_scope
+            ))
+        ]
     )
-    def _delete():
-        return
+    def _scopes_any(request: Request):
+        return {
+            "username": request.user.username,
+            "scopes": request.auth.scopes
+        }
+
+    @app.get(
+        "/admin",
+        dependencies=[
+            Depends(auth.AdminValidator(admin_scope=admin_scope))
+        ]
+    )
+    def _admin(request: Request):
+        return {
+            "username": request.user.username,
+            "scopes": request.auth.scopes
+        }
 
     app.add_middleware(
-        AuthenticationMiddleware, backend=auth.PayloadAuthBackend(user_cls=User)
+        AuthenticationMiddleware,
+        backend=auth.PayloadAuthBackend(user_cls=User, admin_scope=admin_scope)
     )
     app.add_middleware(middleware.UpstreamPayloadMiddleware)
     app.add_middleware(middleware.SessionMiddleware, bind=session.bind)
+
+    payload_prefix = middleware.UpstreamPayloadMiddleware.PAYLOAD_HEADER_PREFIX
 
     # Test /ping - no auth & authz required
     res = client.get("/ping")
     assert res.status_code == 200, res.text
     assert res.text == '"pong"'
 
-    # Test /me - auth required, no authz
+    # Test /me - not authenticated
     res = client.get("/me", headers={
-        "X-Payload-username": user.username
-    })
-    assert res.status_code == 200, res.text
-    assert res.json() == {
-        "user": user.as_dict(),
-        "scopes": []
-    }
-
-    # Test /me/scopes - auth & authz required
-    res = client.post("/me/scopes", headers={
-        "X-Payload-username": user.username,
-        "X-Payload-permissions": "test-scope,write"
-    })
-    assert res.status_code == 200, res.text
-    assert res.json() == {
-        "user": user.as_dict(),
-        "scopes": ["test-scope", "write"]
-    }
-
-    # Test /me - auth + admin scope required
-    res = client.delete("/me", headers={
-        "X-Payload-username": user.username,
-        "X-Payload-permissions": "*"
-    })
-    assert res.status_code == 204, res.text
-
-    # Test /me - failed - no admin scope
-    res = client.delete("/me", headers={
-        "X-Payload-username": user.username,
-        "X-Payload-permissions": "test-scope"
-    })
-    assert res.status_code == 403
-
-
-def test_auth_not_authenticated(session, app, client):
-
-    @app.get(
-        "/me",
-        dependencies=[Depends(auth.validate_authenticated)]
-    )
-    async def _get():
-        return {}
-
-    app.add_middleware(
-        AuthenticationMiddleware, backend=auth.PayloadAuthBackend(user_cls=User)
-    )
-    app.add_middleware(middleware.UpstreamPayloadMiddleware)
-    app.add_middleware(middleware.SessionMiddleware, bind=session.bind)
-
-    payload_prefix = middleware.UpstreamPayloadMiddleware.PAYLOAD_HEADER_PREFIX
-
-    res = client.get("/me", headers={
-        f"{payload_prefix}username": "nonexistent_user",
-        f"{payload_prefix}permissions": "write"
+        f"{payload_prefix}username": "nonexistent_user"
     })
     assert res.status_code == 401
 
-
-def test_auth_all_scopes(session, app, client):
-    user = User(username="testuser")
-    session.add(user)
-    session.commit()
-
-    @app.get(
-        "/me",
-        dependencies=[
-            Depends(auth.validate_authenticated),
-            Security(auth.validate_all_scopes, scopes=["me"])
-        ]
-    )
-    async def _get():
-        return {}
-
-    app.add_middleware(
-        AuthenticationMiddleware, backend=auth.PayloadAuthBackend(user_cls=User)
-    )
-    app.add_middleware(middleware.UpstreamPayloadMiddleware)
-    app.add_middleware(middleware.SessionMiddleware, bind=session.bind)
-
-    payload_prefix = middleware.UpstreamPayloadMiddleware.PAYLOAD_HEADER_PREFIX
-
+    # Test /me - success
     res = client.get("/me", headers={
+        f"{payload_prefix}username": user.username
+    })
+    assert res.status_code == 200, res.text
+    assert res.json() == {
+        "username": user.username,
+        "scopes": []
+    }
+
+    # Test /scopes/all - not authenticated
+    res = client.get("/scopes/all", headers={
+        f"{payload_prefix}username": "nonexistent_user",
+        f"{payload_prefix}permissions": "read,write"
+    })
+    assert res.status_code == 401
+
+    # Test /scopes/all - missing required scope
+    res = client.get("/scopes/all", headers={
         f"{payload_prefix}username": user.username,
         f"{payload_prefix}permissions": "read,write"  # no "me" scope
     })
     assert res.status_code == 403
 
-
-def test_auth_any_scope(session, app, client):
-    user = User(username="testuser")
-    session.add(user)
-    session.commit()
-
-    @app.get(
-        "/me",
-        dependencies=[
-            Depends(auth.validate_authenticated),
-            Security(auth.validate_any_scope, scopes=["admin", "read"])
-        ]
-    )
-    async def _get():
-        return {}
-
-    app.add_middleware(
-        AuthenticationMiddleware, backend=auth.PayloadAuthBackend(user_cls=User)
-    )
-    app.add_middleware(middleware.UpstreamPayloadMiddleware)
-    app.add_middleware(middleware.SessionMiddleware, bind=session.bind)
-
-    payload_prefix = middleware.UpstreamPayloadMiddleware.PAYLOAD_HEADER_PREFIX
-
-    # Test request with only "admin" scope
-    res = client.get("/me", headers={
+    # Test /scopes/all - success
+    res = client.get("/scopes/all", headers={
         f"{payload_prefix}username": user.username,
-        f"{payload_prefix}permissions": "admin"
+        f"{payload_prefix}permissions": "read,write,me"
     })
-    assert res.status_code == 200
+    assert res.status_code == 200, res.text
+    assert res.json() == {
+        "username": user.username,
+        "scopes": ["read", "write", "me"]
+    }
 
-    # Test request with only "read" scope
-    res = client.get("/me", headers={
+    # Test /scopes/all - admin scope - success
+    res = client.get("/scopes/all", headers={
+        f"{payload_prefix}username": user.username,
+        f"{payload_prefix}permissions": admin_scope  # not specified in endpoint
+    })
+    assert res.status_code == 200, res.text
+    assert res.json() == {
+        "username": user.username,
+        "scopes": [admin_scope]
+    }
+
+    # Test /scopes/any - not authenticated
+    res = client.get("/scopes/any", headers={
+        f"{payload_prefix}username": "nonexistent_user"
+    })
+    assert res.status_code == 401
+
+    # Test /scopes/any - request without any scope
+    res = client.get("/scopes/any", headers={
+        f"{payload_prefix}username": user.username
+    })
+    assert res.status_code == 403
+
+    # Test /scopes/any - request with only "read" scope
+    res = client.get("/scopes/any", headers={
         f"{payload_prefix}username": user.username,
         f"{payload_prefix}permissions": "read"
     })
     assert res.status_code == 200
+    assert res.json() == {
+        "username": user.username,
+        "scopes": ["read"]
+    }
 
-    # Test request without any scope
-    res = client.get("/me", headers={
+    # Test /scopes/any - admin scope - success
+    res = client.get("/scopes/any", headers={
         f"{payload_prefix}username": user.username,
-        f"{payload_prefix}permissions": ""
+        f"{payload_prefix}permissions": admin_scope  # not specified in endpoint
+    })
+    assert res.status_code == 200
+    assert res.json() == {
+        "username": user.username,
+        "scopes": [admin_scope]
+    }
+
+    # Test /admin - failed - no admin scope
+    res = client.get("/admin", headers={
+        "X-Payload-username": user.username,
+        "X-Payload-permissions": "non-admin-scope"
     })
     assert res.status_code == 403
+
+    # Test /admin - admin scope required
+    res = client.get("/admin", headers={
+        "X-Payload-username": user.username,
+        "X-Payload-permissions": f"{admin_scope},read"
+    })
+    assert res.status_code == 200, res.text
+    assert res.json() == {
+        "username": user.username,
+        "scopes": [admin_scope]
+    }
 
 
 def test_payload_auth_backend():
