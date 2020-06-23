@@ -182,6 +182,27 @@ def test_crud_update(session, loop):
     assert person.name == "edith"
 
 
+def test_crud_update_partial(session, loop):
+    person = Person(**PEOPLE_DATA[0])
+    session.add(person)
+    session.commit()
+    person = session.merge(person)
+
+    assert person.name == "alice"
+
+    data = {
+        "name": "edith"
+    }
+
+    result = loop.run_until_complete(
+        crud.update_instance(Person, session, person.id, data)
+    )
+    assert result["name"] == "edith"
+
+    session.refresh(person)
+    assert person.name == "edith"
+
+
 def test_crud_update_404(session, loop):
     with pytest.raises(HTTPException) as exc_info:
         loop.run_until_complete(

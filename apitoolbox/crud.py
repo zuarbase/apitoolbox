@@ -1,6 +1,6 @@
 """ Generic CRUD operations """
 from uuid import UUID
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 
 import sqlalchemy.exc
 from pydantic import BaseModel, PositiveInt
@@ -111,14 +111,19 @@ async def update_instance(
         cls: models.BASE,
         session: models.Session,
         instance_id: UUID,
-        data: BaseModel) -> dict:
-    """ Fully update an instances using the provided data """
+        data: Union[BaseModel, dict]) -> dict:
+    """ Partial update an instance using the provided data """
+
+    if isinstance(data, BaseModel):
+        update_data = data.dict(exclude_unset=True)
+    else:
+        update_data = data
 
     def _update():
         instance = session.query(cls).get(instance_id)
         if not instance:
             return None
-        for key, value in data.dict().items():
+        for key, value in update_data.items():
             setattr(instance, key, value)
         session.commit()
         return session.merge(instance).as_dict()
