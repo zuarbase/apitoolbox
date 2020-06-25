@@ -14,6 +14,7 @@ class Permission(BASE, mixins.GuidMixin, mixins.TimestampMixin):
     name = sqlalchemy.Column(
         sqlalchemy.String(255),
         nullable=False,
+        unique=True,
     )
 
     @classmethod
