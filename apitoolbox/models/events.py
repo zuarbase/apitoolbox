@@ -119,4 +119,4 @@ def _after_configured():
             user_permissions_table is not None and \
             group_permissions_table is not None and \
             group_membership_table is not None:
-        user_cls.permissions = property(_permissions)
+        user_cls.permissions = _permissions
