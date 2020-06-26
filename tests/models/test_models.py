@@ -109,7 +109,7 @@ def test_permissions(engine, session):
 
     alice = User.get_by_username(session, "alice")
     assert ["READ", "WRITE"] == sorted(
-        permission.name for permission in alice.permissions
+        permission.name for permission in alice.permissions()
     )
 
 
@@ -131,7 +131,7 @@ def test_permission_duplicate(engine, session):
 
     alice = User.get_by_username(session, "alice")
     assert ["READ", "WRITE"] == sorted(
-        permission.name for permission in alice.permissions
+        permission.name for permission in alice.permissions()
     )
 
 

@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 PACKAGE = "apitoolbox"
-VERSION = "0.11.1"
+VERSION = "0.11.2"
 
 URL = "https://github.com/zuarbase/" + PACKAGE
 DOWNLOAD_URL= URL + "/archive/v" + VERSION + ".tar.gz"
