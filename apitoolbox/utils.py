@@ -5,6 +5,7 @@ from string import Template
 from typing import Union
 
 import jwt
+import sqlalchemy.engine.url
 from starlette.requests import Request
 
 try:
@@ -59,3 +60,31 @@ def jwt_encode(payload: dict, secret: str, algorithm: str = "HS256") -> str:
         str(secret),
         algorithm=algorithm,
     ).decode("utf-8")
+
+
+def create_engine(dbo: str, **kwargs) -> sqlalchemy.engine.Engine:
+    """Wrapper on sqlalchemy.create_engine().
+
+    Use default parameters based on a database.
+    """
+    url = sqlalchemy.engine.url.make_url(dbo)
+
+    backend_name = url.get_backend_name()
+    if backend_name == "snowflake":
+        kwargs.setdefault(
+            "pool_pre_ping", False)  # Skip connection ping (e.g. "SELECT 1")
+        kwargs.setdefault(
+            "pool_reset_on_return", None)  # Do nothing on connection "check-in"
+        kwargs.setdefault(
+            "_initialize", False)  # Skip "first_connect" initialization
+    else:
+        kwargs.setdefault("pool_pre_ping", True)
+
+    engine = sqlalchemy.create_engine(url, **kwargs)
+
+    if backend_name == "snowflake":
+        engine.execute(
+            "alter session set quoted_identifiers_ignore_case = true;"
+        )
+
+    return engine

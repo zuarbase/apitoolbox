@@ -2,6 +2,7 @@ import uuid
 from string import Template
 
 import pytest
+from sqlalchemy.engine.url import make_url
 
 from apitoolbox import utils
 
@@ -78,4 +79,63 @@ def test_jwt_encode(mocker):
         payload,
         secret,
         algorithm="HS256"
+    )
+
+
+@pytest.mark.parametrize("url,input_kw, actual_kw", [
+    ("postgres://localhost/my_db", {}, {"pool_pre_ping": True}),
+    ("postgres://localhost/my_db",
+     {"pool_pre_ping": False, "echo": True},
+     {"pool_pre_ping": False, "echo": True}),
+    ("snowflake://localhost/my_db",
+     {},
+     {
+         "pool_pre_ping": False,
+         "pool_reset_on_return": None,
+         "_initialize": False
+     }),
+    ("snowflake://localhost/my_db",
+     {
+         "pool_pre_ping": True,
+         "echo": True,
+     },
+     {
+         "pool_pre_ping": True,
+         "echo": True,
+         "pool_reset_on_return": None,
+         "_initialize": False
+     }),
+], ids=[
+    "postgres_default_kw",
+    "postgres_custom_kw",
+    "snowflake_default_kw",
+    "snowflake_custom_kw",
+])
+def test_create_engine(mocker, url, input_kw, actual_kw):
+    """Test `create_engine` parameters for different databases."""
+    create_engine = mocker.patch("sqlalchemy.create_engine")
+
+    engine = utils.create_engine(url, **input_kw)
+    assert engine == create_engine.return_value
+    assert create_engine.call_args == mocker.call(
+        make_url(url),
+        **actual_kw
+    )
+
+
+def test_create_engine__snowflake_ignore_case(mocker):
+    create_engine = mocker.patch("sqlalchemy.create_engine")
+
+    # Test - not called for others
+    url = "postgres://localhost/my_db"
+    engine = utils.create_engine(url)
+    assert engine == create_engine.return_value
+    assert not engine.execute.called
+
+    # Test - called for snowflake
+    url = "snowflake://localhost/my_db"
+    engine = utils.create_engine(url)
+    assert engine == create_engine.return_value
+    assert engine.execute.call_args == mocker.call(
+        "alter session set quoted_identifiers_ignore_case = true;"
     )
