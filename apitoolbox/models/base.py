@@ -1,7 +1,7 @@
 """ SQLAlchemy helper function """
 import uuid
 import enum
-from collections import Mapping
+from collections.abc import Mapping
 
 import sqlalchemy
 
