@@ -128,7 +128,11 @@ async def update_instance(
         session.commit()
         return session.merge(instance).as_dict()
 
-    data = await run_in_threadpool(_update)
+    try:
+        data = await run_in_threadpool(_update)
+    except sqlalchemy.exc.IntegrityError as ex:
+        raise HTTPException(status_code=409, detail=str(ex.orig))
+
     if data is None:
         raise HTTPException(status_code=404)
     return data

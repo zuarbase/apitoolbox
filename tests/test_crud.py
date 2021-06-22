@@ -203,6 +203,28 @@ def test_crud_update_partial(session, loop):
     assert person.name == "edith"
 
 
+def test_crud_update_409(mocker, loop):
+    exc = sqlalchemy.exc.IntegrityError(
+        statement="fake statement",
+        params={},
+        orig=Person
+    )
+
+    session = mocker.Mock()
+    session.commit = mocker.Mock(side_effect=exc)
+    person_id = uuid.uuid4()
+
+    with pytest.raises(HTTPException) as exc_info:
+        loop.run_until_complete(
+            crud.update_instance(
+                Person, session, person_id, PersonRequestModel(**PEOPLE_DATA[0])
+            )
+        )
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == str(exc.orig)
+
+
 def test_crud_update_404(session, loop):
     with pytest.raises(HTTPException) as exc_info:
         loop.run_until_complete(
