@@ -58,4 +58,4 @@ def jwt_encode(payload: dict, secret: str, algorithm: str = "HS256") -> str:
         payload,
         str(secret),
         algorithm=algorithm,
-    ).decode("utf-8")
+    )

@@ -52,7 +52,7 @@ def test_login_post(mocker, engine, session, app, client):
         expected_data,
         endpoint.secret,
         algorithm=endpoint.jwt_algorithm
-    ).decode("utf-8")
+    )
 
     res = client.post(
         "/login",

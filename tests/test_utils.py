@@ -1,7 +1,10 @@
 import uuid
+from datetime import datetime
 from string import Template
 
+import jwt
 import pytest
+import pytz
 
 from apitoolbox import utils
 
@@ -79,3 +82,16 @@ def test_jwt_encode(mocker):
         secret,
         algorithm="HS256"
     )
+
+
+def test_jwt_encode_decode():
+    payload = {
+        "key": "value",
+        "exp": datetime.now(tz=pytz.utc),
+    }
+    secret = "my_secret"
+    result = utils.jwt_encode(payload, secret, "HS256")
+    assert result
+
+    decoded_result = jwt.decode(result, secret, "HS256")
+    assert decoded_result == payload

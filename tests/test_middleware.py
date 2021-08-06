@@ -37,7 +37,7 @@ def test_middleware_jwt(session, app, client):
     payload = {
         "username": "testuser"
     }
-    token = jwt.encode(payload, secret).decode("utf-8")
+    token = jwt.encode(payload, secret)
 
     res = client.get("/payload", cookies={"jwt": token})
     assert res.status_code == 200
