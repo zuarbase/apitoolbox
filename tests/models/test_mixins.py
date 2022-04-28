@@ -12,8 +12,9 @@ def test_timestamp_mixin(session):
     session.commit()
 
     updated_at = user.updated_at
-    assert user.created_at.replace(microsecond=0) == \
-        updated_at.replace(microsecond=0)
+    assert user.created_at.replace(microsecond=0) == updated_at.replace(
+        microsecond=0
+    )
 
     user.username = "test_timestamp_mixin__updated"
     session.add(user)
@@ -25,15 +26,16 @@ def test_timestamp_mixin(session):
 def test_dict_mixin(mocker):
     base_cls = sqlalchemy.ext.declarative.declarative_base()
 
-    class TestModel(base_cls, models.DictMixin):
+    class TestModel(
+        base_cls, models.DictMixin
+    ):  # pylint: disable=too-few-public-methods
         __tablename__ = "test_dict_mixin"
 
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     model = TestModel(id=1)
 
-    mock_model_as_dict = mocker.patch(
-        "apitoolbox.models.mixins.model_as_dict")
+    mock_model_as_dict = mocker.patch("apitoolbox.models.mixins.model_as_dict")
     result = model.as_dict()
     assert mock_model_as_dict.call_args == mocker.call(model)
     assert result is mock_model_as_dict.return_value

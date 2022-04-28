@@ -7,21 +7,19 @@ logger = logging.getLogger(__name__)
 
 
 class LogoutEndpoint:
-    """ Class-based endpoint for logout """
+    """Class-based endpoint for logout"""
 
     def __init__(
-            self,
-            location: str = "/login",
-            cookie_name: str = "jwt",
+        self,
+        location: str = "/login",
+        cookie_name: str = "jwt",
     ):
         self.cookie_name = cookie_name
         self.location = location
 
     # NOTE: no GET handler
-    async def on_post(
-            self
-    ) -> JSONResponse:
-        """ POST /logout """
+    async def on_post(self) -> JSONResponse:
+        """POST /logout"""
         # 303 tells the browser to switch from POST to GET
         headers = {"location": self.location}
 

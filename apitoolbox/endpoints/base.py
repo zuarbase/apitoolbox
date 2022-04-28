@@ -23,29 +23,20 @@ class BaseCrudEndpoint:
             self.entity_cls, session, instance_id
         )
 
-    async def create(self, session: Session, data: BaseModel) -> Dict[str, Any]:
+    async def create(
+        self, session: Session, data: BaseModel
+    ) -> Dict[str, Any]:
         """Create an instance."""
-        return await crud.create_instance(
-            self.entity_cls, session, data
-        )
+        return await crud.create_instance(self.entity_cls, session, data)
 
     async def update(
-            self,
-            session: Session,
-            instance_id,
-            data: BaseModel
+        self, session: Session, instance_id, data: BaseModel
     ) -> Dict[str, Any]:
         """Update an instance by ID."""
         return await crud.update_instance(
             self.entity_cls, session, instance_id, data
         )
 
-    async def delete(
-            self,
-            session: Session,
-            instance_id
-    ):
+    async def delete(self, session: Session, instance_id):
         """Delete an instance by ID."""
-        await crud.delete_instance(
-            self.entity_cls, session, instance_id
-        )
+        await crud.delete_instance(self.entity_cls, session, instance_id)

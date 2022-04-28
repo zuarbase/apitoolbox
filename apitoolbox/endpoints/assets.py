@@ -1,7 +1,7 @@
 """ Asset manager implementation """
-import os
-import logging
 import hashlib
+import logging
+import os
 from typing import Any, Dict, List
 
 from apitoolbox import tz
@@ -10,36 +10,34 @@ logger = logging.getLogger(__name__)
 
 
 class AssetManagerEndpoint:
-    """ Class-based endpoint for an Asset Manager """
+    """Class-based endpoint for an Asset Manager"""
 
-    def __init__(
-            self,
-            document_root: str
-    ):
+    def __init__(self, document_root: str):
         self.document_root = os.path.abspath(document_root)
 
     @staticmethod
-    def generate_id(
-            path: str
-    ) -> str:
+    def generate_id(path: str) -> str:
         """MD5 the path as a unique id"""
         encoded = hashlib.md5(path.encode("utf-8")).hexdigest()
-        return encoded[0:8] + "-" + encoded[8:12] + "-" + encoded[12:16] +\
-            "-" + encoded[16:20] + encoded[20:]
+        return (
+            encoded[0:8]
+            + "-"
+            + encoded[8:12]
+            + "-"
+            + encoded[12:16]
+            + "-"
+            + encoded[16:20]
+            + encoded[20:]
+        )
 
     @staticmethod
-    def stat_time(
-            timestamp: float
-    ) -> str:
-        """ Convert a stat time to a UTC datetime strimg """
+    def stat_time(timestamp: float) -> str:
+        """Convert a stat time to a UTC datetime strimg"""
         datetime = tz.datetime.utcfromtimestamp(timestamp)
         return datetime.isoformat()
 
-    async def list_assets(
-            self,
-            path: str
-    ) -> List[Dict[str, Any]]:
-        """ List contents of 'path'"""
+    async def list_assets(self, path: str) -> List[Dict[str, Any]]:
+        """List contents of 'path'"""
         if not path.startswith("/"):
             raise ValueError("Path must start with a forward slash '/'")
         path = path[1:]
@@ -67,7 +65,9 @@ class AssetManagerEndpoint:
                     continue  # pragma: no cover
 
                 if path:
-                    data["id"] = self.generate_id("/" + path + "/" + entry.name)
+                    data["id"] = self.generate_id(
+                        "/" + path + "/" + entry.name
+                    )
                 else:
                     data["id"] = self.generate_id("/" + entry.name)
                 data["name"] = entry.name

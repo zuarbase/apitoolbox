@@ -2,12 +2,13 @@
 import sqlalchemy
 from sqlalchemy import event
 
-from .base import BASE, Session, MODEL_MAPPING
 from . import mixins
+from .base import BASE, MODEL_MAPPING, Session
 
 
 class Permission(BASE, mixins.GuidMixin, mixins.TimestampMixin):
-    """ The permissions table """
+    """The permissions table"""
+
     __tablename__ = "permissions"
     __abstract__ = True
 
@@ -18,13 +19,8 @@ class Permission(BASE, mixins.GuidMixin, mixins.TimestampMixin):
     )
 
     @classmethod
-    def get_by_name(
-            cls,
-            session: Session,
-            name: str
-    ):
-        """ Lookup a group by name
-        """
+    def get_by_name(cls, session: Session, name: str):
+        """Lookup a group by name"""
         return session.query(cls).filter(cls.name == name).first()
 
 

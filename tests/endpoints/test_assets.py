@@ -1,9 +1,10 @@
+import asyncio
 import os
 import tempfile
-import asyncio
 from pathlib import Path
 
 import pytest
+
 from apitoolbox import endpoints
 
 
@@ -41,7 +42,7 @@ def test_assets_list(loop, temp_dir):
         "id": endpoint.generate_id("/file1"),
         "name": "file1",
         "type": "file",
-        "size": 0
+        "size": 0,
     }
 
 
@@ -78,7 +79,7 @@ def test_assets_list_subdir(loop, temp_dir):
     assert result == {
         "id": endpoint.generate_id("/dir1"),
         "name": "dir1",
-        "type": "directory"
+        "type": "directory",
     }
 
 
@@ -103,6 +104,6 @@ def test_assets_list_subdir_file(loop, temp_dir):
             "id": endpoint.generate_id("/dir1/file1"),
             "name": "file1",
             "type": "file",
-            "size": 0
+            "size": 0,
         }
     ]

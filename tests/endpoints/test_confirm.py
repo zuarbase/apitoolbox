@@ -6,7 +6,7 @@ from apitoolbox import endpoints, models
 
 
 class User(
-        models.User, models.mixins.ConfirmationMixin, models.mixins.DictMixin
+    models.User, models.mixins.ConfirmationMixin, models.mixins.DictMixin
 ):
     __tablename__ = "test_confirm_users"
     __model_mapping__ = False
@@ -14,7 +14,8 @@ class User(
 
 def test_confirm(session, app, client):
     endpoint = endpoints.ConfirmEndpoint(
-        User, secret="s0secret",
+        User,
+        secret="s0secret",
     )
 
     user = User(username="testuser", email="recipient@example.org")
@@ -24,9 +25,7 @@ def test_confirm(session, app, client):
     token_ = URLSafeTimedSerializer("s0secret").dumps(user.email, salt=None)
 
     @app.get("/confirm/{token}")
-    async def _get(
-            token: str
-    ):
+    async def _get(token: str):
         return await endpoint.on_get(session, token)
 
     res = client.get(f"/confirm/{token_}", allow_redirects=False)
@@ -36,13 +35,14 @@ def test_confirm(session, app, client):
 
 def test_confirm_user_already_confirmed(session, app, client):
     endpoint = endpoints.ConfirmEndpoint(
-        User, secret="s0secret",
+        User,
+        secret="s0secret",
     )
 
     user = User(
         username="testuser",
         email="recipient@example.org",
-        confirmed_at=datetime.now()
+        confirmed_at=datetime.now(),
     )
     session.add(user)
     session.commit()
@@ -50,9 +50,7 @@ def test_confirm_user_already_confirmed(session, app, client):
     token_ = URLSafeTimedSerializer("s0secret").dumps(user.email, salt=None)
 
     @app.get("/confirm/{token}")
-    async def _get(
-            token: str
-    ):
+    async def _get(token: str):
         return await endpoint.on_get(session, token)
 
     res = client.get(f"/confirm/{token_}", allow_redirects=False)
@@ -65,14 +63,13 @@ def test_confirm_user_not_found(session, app, client):
         User, secret="s0secret", template="<${error}"
     )
 
-    nonexistent_email = "nonexistent@local.example.com"
-    token_ = URLSafeTimedSerializer(
-        "s0secret").dumps(nonexistent_email, salt=None)
+    nonexistent_email = "nonexistent@local.test.com"
+    token_ = URLSafeTimedSerializer("s0secret").dumps(
+        nonexistent_email, salt=None
+    )
 
     @app.get("/confirm/{token}")
-    async def _get(
-            token: str
-    ):
+    async def _get(token: str):
         return await endpoint.on_get(session, token)
 
     res = client.get(f"/confirm/{token_}", allow_redirects=False)
@@ -82,15 +79,11 @@ def test_confirm_user_not_found(session, app, client):
 
 def test_confirm_error(session, app, client):
     endpoint = endpoints.ConfirmEndpoint(
-        User,
-        secret="s0secret",
-        template="<${error}"
+        User, secret="s0secret", template="<${error}"
     )
 
     @app.get("/confirm/{token}")
-    async def _get(
-            token: str
-    ):
+    async def _get(token: str):
         return await endpoint.on_get(session, token)
 
     res = client.get("/confirm/bad-token")

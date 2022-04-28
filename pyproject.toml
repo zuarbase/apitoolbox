@@ -1,0 +1,52 @@
+[tool.poetry]
+name = "apitoolbox"
+version = "0.13.0"
+description = "Full-stack async framework for Python."
+authors = ["Matthew Laue <matt@zuar.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.75.2"
+PyJWT = "^2.3.0"
+SQLAlchemy = "^1.4.36"
+itsdangerous = "^2.1.2"
+python-dateutil = "^2.8.2"
+passlib = "^1.7.4"
+sqlalchemy-filters = {git = "git@github.com:deniszorinets/sqlalchemy-filters.git", rev = "v0.13.0"}
+python-multipart = "^0.0.5"
+email-validator = "^1.2.0"
+
+[tool.poetry.dev-dependencies]
+black = "^22.3.0"
+isort = "^5.10.1"
+pylint = "^2.13.7"
+pytest = "^7.1.2"
+coverage = "^6.3.2"
+requests = "^2.27.1"
+pytest-mock = "^3.7.0"
+pre-commit = "^2.18.1"
+pytest-env = "^0.6.2"
+
+[tool.black]
+line-length = 79
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint.master]
+ignore = "CVS"
+cache-size = "500"
+disable = "C0114"
+
+[tool.pylint.similariries]
+ignore-comments = "yes"
+ignore-docstrings = "yes"
+ignore-imports = "yes"
+min-similarity-lines = "4"
+
+[tool.pylint.format]
+max-line-length = 79
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

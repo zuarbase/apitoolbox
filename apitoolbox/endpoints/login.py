@@ -1,39 +1,39 @@
 """ Login functionality """
-import os
-import logging
 import inspect
+import logging
+import os
 from typing import Optional, Union
 
-from starlette.responses import HTMLResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
+from starlette.responses import HTMLResponse, JSONResponse
 
-from apitoolbox import tz, models, utils
+from apitoolbox import models, tz, utils
 
 logger = logging.getLogger(__name__)
 
 
 class LoginEndpoint:
-    """ Class-based endpoint for login """
+    """Class-based endpoint for login"""
 
     DEFAULT_TEMPLATE = os.path.join(
         os.path.dirname(__file__), "templates", "login.html"
     )
 
     def __init__(
-            self,
-            user_cls,
-            secret,
-            *,
-            template: str = DEFAULT_TEMPLATE,
-            error_status_code: int = 401,
-            location: str = "/",
-            token_expiry: int = 86400,  # 24 hours
-            secure: bool = True,
-            cookie_name: str = "jwt",
-            jwt_algorithm: str = "HS256",
-            form_action: str = "/login",
-            require_confirmation: bool = False,
-            register_url: str = None
+        self,
+        user_cls,
+        secret,
+        *,
+        template: str = DEFAULT_TEMPLATE,
+        error_status_code: int = 401,
+        location: str = "/",
+        token_expiry: int = 86400,  # 24 hours
+        secure: bool = True,
+        cookie_name: str = "jwt",
+        jwt_algorithm: str = "HS256",
+        form_action: str = "/login",
+        require_confirmation: bool = False,
+        register_url: str = None,
     ):
         assert inspect.isclass(user_cls)
         self.secret = secret
@@ -50,7 +50,7 @@ class LoginEndpoint:
         self.register_url = register_url
 
     def render(self, **kwargs) -> str:
-        """ Render the template using the passed parameters """
+        """Render the template using the passed parameters"""
         kwargs.setdefault("username", "")
         kwargs.setdefault("error", "")
         kwargs.setdefault("form_action", self.form_action)
@@ -59,9 +59,7 @@ class LoginEndpoint:
 
         kwargs.setdefault("register_url", self.register_url)
         if self.register_url:
-            register_link = "<a href=\"{url}\">Register</a>".format(
-                url=self.register_url
-            )
+            register_link = f'<a href="{self.register_url}">Register</a>'
             kwargs.setdefault("register_link", register_link)
         else:
             kwargs.setdefault("register_link", "")
@@ -69,7 +67,7 @@ class LoginEndpoint:
         return utils.render(self.template, **kwargs)
 
     async def jwt_encode(self, payload):
-        """ Build the JWT """
+        """Build the JWT"""
         assert "exp" in payload
         return utils.jwt_encode(
             payload,
@@ -77,19 +75,20 @@ class LoginEndpoint:
             algorithm=self.jwt_algorithm,
         )
 
-    async def payload(self, user_data):
-        """ Determine the JWT contents (keep for sub-classes """
+    @staticmethod
+    async def payload(user_data):
+        """Determine the JWT contents (keep for sub-classes"""
         user_data.pop("password", None)
         return user_data
 
     async def authenticate(
-            self,
-            session: models.Session,
-            username: str,
-            password: str,
-            **kwargs  # pylint: disable=unused-argument
+        self,
+        session: models.Session,
+        username: str,
+        password: str,
+        **kwargs,  # pylint: disable=unused-argument
     ) -> Optional[dict]:
-        """ Perform authentication against database """
+        """Perform authentication against database"""
 
         def _get_by_username():
             return self.user_cls.get_by_username(session, username)
@@ -107,24 +106,21 @@ class LoginEndpoint:
         return user.as_dict()
 
     async def on_get(self) -> HTMLResponse:
-        """ Handle GET requests """
+        """Handle GET requests"""
         html = await run_in_threadpool(self.render)
         return HTMLResponse(content=html, status_code=200)
 
     async def on_post(
-            self,
-            session: models.Session,
-            username: str,
-            password: str,
-            location: str = None,
-            **kwargs
+        self,
+        session: models.Session,
+        username: str,
+        password: str,
+        location: str = None,
+        **kwargs,
     ) -> Union[HTMLResponse, JSONResponse]:
-        """ Handle POST requests """
+        """Handle POST requests"""
         user_data = await self.authenticate(
-            session,
-            username=username,
-            password=password,
-            **kwargs
+            session, username=username, password=password, **kwargs
         )
         if not user_data:
             # ref: OWASP
@@ -133,8 +129,7 @@ class LoginEndpoint:
                 self.render, username=username, error=error
             )
             return HTMLResponse(
-                content=html,
-                status_code=self.error_status_code
+                content=html, status_code=self.error_status_code
             )
 
         result = await self.payload(user_data)
@@ -150,12 +145,13 @@ class LoginEndpoint:
 
         headers = {"location": location or self.location}
         response = JSONResponse(
-            content=result,
-            status_code=303,
-            headers=headers
+            content=result, status_code=303, headers=headers
         )
         response.set_cookie(
-            self.cookie_name, token,
-            path="/", expires=int(expiry.timestamp()), secure=self.secure
+            self.cookie_name,
+            token,
+            path="/",
+            expires=int(expiry.timestamp()),
+            secure=self.secure,
         )
         return response

@@ -1,16 +1,15 @@
 import uuid
-from datetime import datetime, date
+from datetime import date, datetime
 from enum import Enum
 
 import pytest
-import sqlalchemy.orm
 import sqlalchemy.ext.declarative
+import sqlalchemy.orm
 
 from apitoolbox import models
 from apitoolbox.models import base
 from apitoolbox.models.base import MODEL_MAPPING
-
-from tests.data.models import User, Group, Permission
+from tests.data.models import Group, Permission, User
 
 models.create_group_membership_table()
 models.create_user_permissions_table()
@@ -49,9 +48,7 @@ def test_groups(engine, session):
     session.commit()
 
     alice = User.get_by_username(session, "alice")
-    assert ["admins", "users"] == sorted(
-        group.name for group in alice.groups
-    )
+    assert ["admins", "users"] == sorted(group.name for group in alice.groups)
 
 
 def test_user_case(engine, session):
@@ -137,17 +134,9 @@ def test_permission_duplicate(engine, session):
 
 def test_model_mapping_update():
     mapping = base.ModelMapping()
-    mapping.update({
-        "key1": "value1"
-    }, key2="value2")
-    mapping.update([
-        ("key3", "value3")
-    ])
-    assert mapping == {
-        "key1": "value1",
-        "key2": "value2",
-        "key3": "value3"
-    }
+    mapping.update({"key1": "value1"}, key2="value2")
+    mapping.update([("key3", "value3")])
+    assert mapping == {"key1": "value1", "key2": "value2", "key3": "value3"}
 
 
 def test_model_mapping_duplicate_key_error():
@@ -158,8 +147,10 @@ def test_model_mapping_duplicate_key_error():
     with pytest.raises(RuntimeError) as exc_info:
         mapping[key] = "value-2"
 
-    expected_msg = f"Duplicate '{key}' model found. " \
-                   f"There may only be one non-abstract sub-class."
+    expected_msg = (
+        f"Duplicate '{key}' model found. "
+        f"There may only be one non-abstract sub-class."
+    )
     assert str(exc_info.value) == expected_msg
 
 
@@ -167,19 +158,18 @@ def test_model_to_dict():
     base_cls = sqlalchemy.ext.declarative.declarative_base()
 
     class FoodEnum(str, Enum):
-        pizza = "pizza"
-        pasta = "pasta"
+        PIZZA = "pizza"
+        PASTA = "pasta"
 
-    class TestRelation(base_cls):
+    class TestRelation(base_cls):  # pylint: disable=too-few-public-methods
         __tablename__ = "test_relation"
 
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
         dict_id = sqlalchemy.Column(
-            sqlalchemy.Integer,
-            sqlalchemy.ForeignKey("test_model.id")
+            sqlalchemy.Integer, sqlalchemy.ForeignKey("test_model.id")
         )
 
-    class TestModel(base_cls):
+    class TestModel(base_cls):  # pylint: disable=too-few-public-methods
         __tablename__ = "test_model"
 
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
@@ -195,11 +185,11 @@ def test_model_to_dict():
         dt=datetime.now(),
         date=date.today(),
         uuid=uuid.uuid4(),
-        enum=FoodEnum.pasta,
+        enum=FoodEnum.PASTA,
         items=[
             TestRelation(id=1),
             TestRelation(id=2),
-        ]
+        ],
     )
     assert base.model_as_dict(model) == {
         "id": model.id,
@@ -214,15 +204,14 @@ def test_model_to_dict():
 def test_base_as_dict(mocker):
     base_cls = sqlalchemy.ext.declarative.declarative_base(cls=base.Base)
 
-    class TestModel(base_cls):
+    class TestModel(base_cls):  # pylint: disable=too-few-public-methods
         __tablename__ = "test_base_as_dict"
 
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     model = TestModel(id=1)
 
-    mock_model_as_dict = mocker.patch(
-        "apitoolbox.models.base.model_as_dict")
+    mock_model_as_dict = mocker.patch("apitoolbox.models.base.model_as_dict")
     result = model.as_dict()
     assert mock_model_as_dict.call_args == mocker.call(model)
     assert result is mock_model_as_dict.return_value

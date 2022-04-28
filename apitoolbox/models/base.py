@@ -1,10 +1,9 @@
 """ SQLAlchemy helper function """
-import uuid
 import enum
-from collections import Mapping
+import uuid
+from typing import Mapping
 
 import sqlalchemy
-
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -12,10 +11,10 @@ from apitoolbox import tz
 
 
 class Base:
-    """ Custom declarative base """
+    """Custom declarative base"""
 
     def as_dict(self):
-        """ Convert object to dictionary """
+        """Convert object to dictionary"""
         return model_as_dict(self)
 
 
@@ -24,7 +23,7 @@ Session = sessionmaker()
 
 
 class ModelMapping(dict):
-    """ Class to hold model information """
+    """Class to hold model information"""
 
     def __setitem__(self, key, value):
         if key in self:
@@ -36,8 +35,9 @@ class ModelMapping(dict):
 
     def update(self, other=None, **kwargs):
         if other is not None:
-            for key, value in other.items() \
-                    if isinstance(other, Mapping) else other:
+            for key, value in (
+                other.items() if isinstance(other, Mapping) else other
+            ):
                 self[key] = value
         for key, value in kwargs.items():
             self[key] = value

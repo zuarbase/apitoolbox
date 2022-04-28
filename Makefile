@@ -1,15 +1,4 @@
-all: flake8 pylint coverage
-
-flake8: flake8_pkg flake8_tests
-.PHONY: flake8
-
-flake8_pkg:
-	flake8 apitoolbox
-.PHONY: flake8_pkg
-
-flake8_tests:
-	flake8 tests
-.PHONY: flake8_tests
+all: pylint coverage
 
 pylint: pylint_pkg pylint_tests
 .PHONY: pylint
@@ -19,7 +8,7 @@ pylint_pkg:
 .PHONY: pylint_pkg
 
 pylint_tests:
-	pylint tests  --disable=missing-docstring,unused-argument,too-many-ancestors,unexpected-keyword-arg
+	pylint tests  --disable=missing-docstring,unused-argument,too-many-ancestors,unexpected-keyword-arg,duplicate-code
 .PHONY: pylint_tests
 
 test:
@@ -29,11 +18,6 @@ test:
 coverage:
 	pytest --cov=apitoolbox --cov-report=term-missing --cov-fail-under=100 tests/
 .PHONY: coverage
-
-pyenv:
-	virtualenv -p python3 pyenv
-	pyenv/bin/pip install -e .[dev,prod]
-.PHONY: pyenv
 
 clean:
 	rm -rf build dist *.egg-info

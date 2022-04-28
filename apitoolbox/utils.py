@@ -1,7 +1,6 @@
 """ Utility functions """
 import uuid
 import time
-
 from string import Template
 from typing import Union
 
@@ -12,35 +11,26 @@ from sqlalchemy.engine import Connection, ResultProxy
 import jwt
 from starlette.requests import Request
 
-try:
-    from ordered_uuid import OrderedUUID
-except ImportError:
-    OrderedUUID = None
 
-
-def ordered_uuid(value=None) -> OrderedUUID:
-    """ Generate a rearranged uuid1 that is ordered by time.
+def ordered_uuid() -> str:
+    """Generate a rearranged uuid1 that is ordered by time.
     This is a more efficient for use as a primary key, see:
     https://www.percona.com/blog/2014/12/19/store-uuid-optimized-way/
     """
-    if OrderedUUID is None:
-        raise RuntimeError("ordered_uuid package: not found")
-    if not value:
-        value = str(uuid.uuid1())
-    return OrderedUUID(value)
+    return str(uuid.uuid1())
 
 
 def render(
-        path_or_template: Union[str, Template],
-        **kwargs,
+    path_or_template: Union[str, Template],
+    **kwargs,
 ) -> str:
-    """ Render the specified template - either a file or the actual template """
+    """Render the specified template - either a file or the actual template"""
     if isinstance(path_or_template, Template):
         template = path_or_template
     elif path_or_template.startswith("<"):
         template = Template(path_or_template)
     else:
-        with open(path_or_template, "r") as filp:
+        with open(path_or_template, "r", encoding="utf-8") as filp:
             contents = filp.read()
         template = Template(contents)
     return template.safe_substitute(**kwargs)
@@ -57,13 +47,13 @@ def get_session(request: Request):
 
 
 def jwt_encode(payload: dict, secret: str, algorithm: str = "HS256") -> str:
-    """ Encode the given payload as a JWT """
+    """Encode the given payload as a JWT"""
     assert "exp" in payload
     return jwt.encode(
         payload,
         str(secret),
         algorithm=algorithm,
-    ).decode("utf-8")
+    )
 
 
 def db_execute(

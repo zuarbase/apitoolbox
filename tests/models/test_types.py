@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-
 from sqlalchemy import Column, Integer, MetaData, Table
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.declarative import declarative_base
@@ -15,7 +14,7 @@ def test_guid_type_functional(session):
         "test_guid_type",
         meta,
         Column("id", types.GUID, primary_key=True, default=uuid.uuid4),
-        Column("other_id", types.GUID)
+        Column("other_id", types.GUID),
     )
     table.create(session.bind)
 
@@ -70,7 +69,7 @@ def test_guid_type(mocker):
 def test_json_encoded_dict_type_functional(session):
     base_cls = declarative_base()
 
-    class TestModel(base_cls):
+    class TestModel(base_cls):  # pylint: disable=too-few-public-methods
         __tablename__ = "test_json_encoded_dict_type"
 
         id = Column(Integer, primary_key=True)
@@ -83,8 +82,7 @@ def test_json_encoded_dict_type_functional(session):
     mutable_data = {"key": "value"}
     non_mutable_data = {"fixed-key": "fixed-value"}
     model = TestModel(
-        mutable_data=mutable_data,
-        non_mutable_data=non_mutable_data
+        mutable_data=mutable_data, non_mutable_data=non_mutable_data
     )
     session.add(model)
     session.commit()
@@ -101,20 +99,26 @@ def test_json_encoded_dict_type_functional(session):
 
     assert model.mutable_data == {
         "key": "updated-value",
-        "new-key": "new-value"
+        "new-key": "new-value",
     }
     # All changes should be reset after commit()
     assert model.non_mutable_data == non_mutable_data
 
-    row = session.query(TestModel).filter(
-        TestModel.mutable_data.like("%updated-value%"),
-        TestModel.non_mutable_data.notlike("%new-fixed-value%")
-    ).one()
+    row = (
+        session.query(TestModel)
+        .filter(
+            TestModel.mutable_data.like("%updated-value%"),
+            TestModel.non_mutable_data.notlike("%new-fixed-value%"),
+        )
+        .one()
+    )
     assert row is model
 
-    row = session.query(TestModel).filter(
-        TestModel.non_mutable_data == non_mutable_data
-    ).one()
+    row = (
+        session.query(TestModel)
+        .filter(TestModel.non_mutable_data == non_mutable_data)
+        .one()
+    )
     assert row is model
 
 
@@ -123,7 +127,8 @@ def test_json_encoded_dict_type(mocker):
 
     with pytest.raises(NotImplementedError):
         json_type.process_literal_param(
-            value=mocker.Mock(), dialect=mocker.Mock())
+            value=mocker.Mock(), dialect=mocker.Mock()
+        )
 
     with pytest.raises(NotImplementedError):
         assert not json_type.python_type

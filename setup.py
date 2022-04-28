@@ -1,10 +1,10 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 PACKAGE = "apitoolbox"
 VERSION = "0.11.2"
 
 URL = "https://github.com/zuarbase/" + PACKAGE
-DOWNLOAD_URL= URL + "/archive/v" + VERSION + ".tar.gz"
+DOWNLOAD_URL = URL + "/archive/v" + VERSION + ".tar.gz"
 
 DESCRIPTION = "Full-stack async framework for Python."
 
@@ -52,6 +52,6 @@ setup(
         ],
         "prod": [
             "gunicorn",
-        ]
-    }
+        ],
+    },
 )

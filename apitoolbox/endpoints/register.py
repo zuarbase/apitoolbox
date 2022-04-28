@@ -1,28 +1,26 @@
 """ Registration functionality """
-import os
-import logging
 import inspect
-from typing import Union
-
-import ssl
+import logging
+import os
 import smtplib
+import ssl
 from email.message import EmailMessage
+from typing import Union
 
 import sqlalchemy.exc
 from itsdangerous import URLSafeTimedSerializer
 from pydantic import EmailStr
-
+from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import URL
 from starlette.responses import HTMLResponse, RedirectResponse
-from starlette.concurrency import run_in_threadpool
 
-from apitoolbox import models, utils, tz
+from apitoolbox import models, tz, utils
 
 logger = logging.getLogger(__name__)
 
 
 class RegisterEndpoint:
-    """ Class-based endpoint for registration with confirmation """
+    """Class-based endpoint for registration with confirmation"""
 
     FORM_TEMPLATE = os.path.join(
         os.path.dirname(__file__), "templates", "register.html"
@@ -41,26 +39,26 @@ class RegisterEndpoint:
     )
 
     def __init__(
-            self,
-            user_cls,
-            secret,
-            *,
-            sender: str = None,
-            form_template: str = FORM_TEMPLATE,
-            confirmation_html_template: str = CONFIRMATION_HTML_TEMPLATE,
-            confirmation_text_template: str = CONFIRMATION_TEXT_TEMPLATE,
-            sent_template: str = SENT_TEMPLATE,
-            form_action: str = "/register",
-            location: str = "/",
-            salt: str = None,
-            email_subject: str = "Email confirmation",
-            email_server: str = "localhost",  # local smtp server
-            email_port: str = 0,  # use default
-            email_use_ssl: bool = False,
-            email_use_tls: bool = False,
-            email_login: str = None,
-            email_password: str = None,
-            confirm_url: str = "/confirm"
+        self,
+        user_cls,
+        secret,
+        *,
+        sender: str = None,
+        form_template: str = FORM_TEMPLATE,
+        confirmation_html_template: str = CONFIRMATION_HTML_TEMPLATE,
+        confirmation_text_template: str = CONFIRMATION_TEXT_TEMPLATE,
+        sent_template: str = SENT_TEMPLATE,
+        form_action: str = "/register",
+        location: str = "/",
+        salt: str = None,
+        email_subject: str = "Email confirmation",
+        email_server: str = "localhost",  # local smtp server
+        email_port: str = 0,  # use default
+        email_use_ssl: bool = False,
+        email_use_tls: bool = False,
+        email_login: str = None,
+        email_password: str = None,
+        confirm_url: str = "/confirm",
     ):
         # pylint: disable=too-many-locals
         assert inspect.isclass(user_cls)
@@ -96,17 +94,14 @@ class RegisterEndpoint:
 
     @property
     def email_confirmation_required(self) -> bool:
-        """ Whether or not email confirmation is required for
+        """Whether or not email confirmation is required for
         new users.
         """
         return self.sender is not None
 
     @staticmethod
-    def render(
-            path_or_template: str,
-            **kwargs
-    ) -> str:
-        """ Render the template using the passed parameters """
+    def render(path_or_template: str, **kwargs) -> str:
+        """Render the template using the passed parameters"""
         kwargs.setdefault("error", "")
         kwargs.setdefault("title", "APIToolbox")
         kwargs.setdefault("modal_title", "Register")
@@ -115,16 +110,13 @@ class RegisterEndpoint:
 
         return utils.render(path_or_template, **kwargs)
 
-    def render_form(
-            self,
-            **kwargs
-    ) -> str:
-        """ Render the registration form """
+    def render_form(self, **kwargs) -> str:
+        """Render the registration form"""
         kwargs["form_action"] = self.form_action
         return self.render(self.form_template, **kwargs)
 
     async def on_get(self) -> HTMLResponse:
-        """ Handle GET requests """
+        """Handle GET requests"""
         html = await run_in_threadpool(self.render_form)
         return HTMLResponse(content=html, status_code=200)
 
@@ -134,18 +126,15 @@ class RegisterEndpoint:
 
     @staticmethod
     def validate_password(password):
-        """ Validate the password format is acceptable """
+        """Validate the password format is acceptable"""
         if password and len(password) >= 7:
             return None
         raise ValueError(
             "Invalid password - the password must be at least 7 characters."
         )
 
-    def send_message(
-            self,
-            msg: EmailMessage
-    ) -> None:
-        """ Delivery the email message """
+    def send_message(self, msg: EmailMessage) -> None:
+        """Delivery the email message"""
         if self.email_use_ssl:
             smtp = smtplib.SMTP_SSL(self.email_server, self.email_port)
         else:
@@ -162,7 +151,7 @@ class RegisterEndpoint:
         smtp.close()
 
     def send_email_confirmation(self, base_url: str, email: str, **kwargs):
-        """ Send the email with a confirmation link """
+        """Send the email with a confirmation link"""
         logger.info("Sending email to %s from %s", email, self.sender)
 
         msg = EmailMessage()
@@ -173,22 +162,23 @@ class RegisterEndpoint:
         confirm_url = self.confirm_url + self._confirmation_token(email)
         if not confirm_url.startswith("http"):
             # Assume relative URL
-            confirm_url = base_url + confirm_url
+            confirm_url = f"{base_url}{confirm_url}"
 
-        data = {**{
-            "email": email,
-            "sender": self.sender,
-            "subject": self.email_subject,
-            "base_url": base_url,
-            "confirm_url": confirm_url,
-        }, **kwargs}
+        data = {
+            **{
+                "email": email,
+                "sender": self.sender,
+                "subject": self.email_subject,
+                "base_url": base_url,
+                "confirm_url": confirm_url,
+            },
+            **kwargs,
+        }
 
-        msg.set_content(
-            self.render(self.confirmation_text_template, **data)
-        )
+        msg.set_content(self.render(self.confirmation_text_template, **data))
         msg.add_alternative(
             self.render(self.confirmation_html_template, **data),
-            subtype="html"
+            subtype="html",
         )
 
         try:
@@ -202,16 +192,16 @@ class RegisterEndpoint:
         # pylint: enable=bare-except
 
     async def on_post(
-            self,
-            base_url: Union[str, URL],
-            session: models.Session,
-            username: str,
-            email: str,
-            password: str,
-            confirm_password: str = None,
-            **kwargs
+        self,
+        base_url: Union[str, URL],
+        session: models.Session,
+        username: str,
+        email: str,
+        password: str,
+        confirm_password: str = None,
+        **kwargs,
     ) -> Union[HTMLResponse, RedirectResponse]:
-        """ Handle POST requests """
+        """Handle POST requests"""
 
         base_url = str(base_url)
         email = EmailStr.validate(email)
@@ -229,8 +219,7 @@ class RegisterEndpoint:
                 # standard form doesn't include it, otherwise the value is ""
                 if password != confirm_password:
                     content = self.render_form(
-                        error="The specified passwords do not match.",
-                        **kwargs
+                        error="The specified passwords do not match.", **kwargs
                     )
                     return HTMLResponse(status_code=400, content=content)
 
@@ -275,8 +264,7 @@ class RegisterEndpoint:
             )
 
             content = self.render(
-                self.sent_template,
-                username=username, email=email, **kwargs
+                self.sent_template, username=username, email=email, **kwargs
             )
             return HTMLResponse(status_code=200, content=content)
 

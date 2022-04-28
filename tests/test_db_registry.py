@@ -12,7 +12,8 @@ def fixture_mock_lock(mocker):
 def fixture_mock_create_engine(mocker):
     return mocker.patch(
         "apitoolbox.db_registry.create_engine",
-        side_effect=lambda url, **kwargs: mocker.Mock(url=url, **kwargs))
+        side_effect=lambda url, **kwargs: mocker.Mock(url=url, **kwargs),
+    )
 
 
 def test_register_existing_engine(mocker, mock_create_engine):

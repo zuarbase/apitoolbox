@@ -1,17 +1,16 @@
 """ Generic middleware """
 import logging
-from typing import Union, Sequence
+from typing import Sequence, Union
 
 import jwt
 from sqlalchemy.engine import Connectable
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from apitoolbox import db_registry
 from apitoolbox.models import Session
-
 
 PAYLOAD_HEADER_PREFIX = "x-payload-"
 
@@ -27,21 +26,15 @@ class SessionMiddleware(BaseHTTPMiddleware):
     Given bind will be added to `apitoolbox.db_registry` and so can be
     accessed from there.
     """
+
     def __init__(
-            self,
-            app: ASGIApp,
-            bind: Union[str, Connectable],
-            **engine_kwargs
+        self, app: ASGIApp, bind: Union[str, Connectable], **engine_kwargs
     ):
         super().__init__(app)
         bind = db_registry.register(bind, **engine_kwargs)
         Session.configure(bind=bind)
 
-    async def dispatch(
-            self,
-            request: Request,
-            call_next
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next) -> Response:
         added = False
         try:
             if not hasattr(request.state, "session"):
@@ -67,22 +60,18 @@ class UpstreamPayloadMiddleware(BaseHTTPMiddleware):
     PAYLOAD_HEADER_PREFIX = PAYLOAD_HEADER_PREFIX
 
     def __init__(
-            self,
-            app: ASGIApp,
-            header_prefix: str = PAYLOAD_HEADER_PREFIX,
+        self,
+        app: ASGIApp,
+        header_prefix: str = PAYLOAD_HEADER_PREFIX,
     ):
         super().__init__(app=app)
         self.header_prefix = header_prefix
 
-    async def dispatch(
-            self,
-            request: Request,
-            call_next
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next) -> Response:
         payload = {}
         for header_name in request.headers:
             if header_name.startswith(self.header_prefix):
-                name = header_name[len(self.header_prefix):]
+                name = header_name[len(self.header_prefix) :]
                 value = request.headers.getlist(header_name)
                 if len(value) == 1:
                     payload[name] = value[0]
@@ -97,12 +86,12 @@ class JwtMiddleware(BaseHTTPMiddleware):
     `request.state.payload`."""
 
     def __init__(
-            self,
-            app: ASGIApp,
-            secret: str,
-            cookie_name: str = "jwt",
-            algorithms: Sequence[str] = ("HS256", "HS512"),
-            **kwargs,
+        self,
+        app: ASGIApp,
+        secret: str,
+        cookie_name: str = "jwt",
+        algorithms: Sequence[str] = ("HS256", "HS512"),
+        **kwargs,
     ):
         super().__init__(app=app)
         self.secret = secret
@@ -110,9 +99,7 @@ class JwtMiddleware(BaseHTTPMiddleware):
         self.algorithms = algorithms
         self.kwargs = kwargs
 
-    async def dispatch(
-            self, request: Request, call_next
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next) -> Response:
         token = request.cookies.get(self.cookie_name)
         if token:
             try:
@@ -120,7 +107,7 @@ class JwtMiddleware(BaseHTTPMiddleware):
                     token,
                     key=self.secret,
                     algorithms=self.algorithms,
-                    **self.kwargs
+                    **self.kwargs,
                 )
                 request.state.payload = payload
             except jwt.exceptions.InvalidTokenError as ex:
