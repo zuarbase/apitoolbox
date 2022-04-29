@@ -8,7 +8,9 @@ NOTE: there are both thread-safe and non thread-safe functions.
 import typing
 import threading
 
-from sqlalchemy.engine import Connectable, Engine, create_engine
+from sqlalchemy.engine import Connectable, Engine
+
+from apitoolbox import utils
 
 __LOCK = threading.Lock()
 
@@ -22,7 +24,7 @@ def register(
 ) -> Engine:
     """Register an engine or create a new one (non thread-safe)."""
     if isinstance(bind, str):
-        engine = create_engine(
+        engine = utils.create_engine(
             bind, pool_pre_ping=pool_pre_ping, **engine_kwargs)
         bind = engine
     else:
