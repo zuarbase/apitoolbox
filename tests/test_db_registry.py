@@ -11,7 +11,7 @@ def fixture_mock_lock(mocker):
 @pytest.fixture(name="mock_create_engine")
 def fixture_mock_create_engine(mocker):
     return mocker.patch(
-        "apitoolbox.db_registry.create_engine",
+        "apitoolbox.utils.create_engine",
         side_effect=lambda url, **kwargs: mocker.Mock(url=url, **kwargs),
     )
 

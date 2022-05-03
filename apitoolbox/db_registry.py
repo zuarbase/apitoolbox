@@ -22,7 +22,7 @@ def register(
 ) -> Engine:
     """Register an engine or create a new one (non thread-safe)."""
     if isinstance(bind, str):
-        engine = create_engine(
+        engine = utils.create_engine(
             bind, pool_pre_ping=pool_pre_ping, **engine_kwargs
         )
         bind = engine

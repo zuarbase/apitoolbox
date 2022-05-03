@@ -57,6 +57,8 @@ class JSONEncodedDict(TypeDecorator):
 
     impl = TEXT
 
+    cache_ok = False
+
     _OPERATORS_FOR_STR = (
         operators.like_op,
         operators.notlike_op,
