@@ -3,11 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 import sqlalchemy
-from pydantic import (
-    BaseModel,
-    PositiveInt,
-    constr,
-)  # pylint: disable=no-name-in-module
+from pydantic import BaseModel, PositiveInt, constr  # pylint: disable=no-name-in-module
 from sqlalchemy.orm import Session
 from sqlalchemy.types import CHAR
 

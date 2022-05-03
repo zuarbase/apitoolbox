@@ -1,14 +1,13 @@
 """ Utility functions """
-import uuid
 import time
+import uuid
 from string import Template
 from typing import Union
 
+import jwt
 import sqlalchemy
 from sqlalchemy import exc
 from sqlalchemy.engine import Connection, ResultProxy
-
-import jwt
 from starlette.requests import Request
 
 
@@ -57,10 +56,11 @@ def jwt_encode(payload: dict, secret: str, algorithm: str = "HS256") -> str:
 
 
 def db_execute(
-        execute_obj,
-        *query_args,
-        max_query_retry_attempts: int = 2,
-        query_retry_timeout: float = 2, **query_kwargs
+    execute_obj,
+    *query_args,
+    max_query_retry_attempts: int = 2,
+    query_retry_timeout: float = 2,
+    **query_kwargs,
 ) -> ResultProxy:
     """
     Execute the given query and make a retry logic if a DB connection was lost
@@ -92,18 +92,18 @@ def db_execute(
     raise last_err
 
 
-def create_engine(
-        dbo: str,
-        **kwargs
-) -> sqlalchemy.engine.Engine:
-    """ Instantiate an engine """
+def create_engine(dbo: str, **kwargs) -> sqlalchemy.engine.Engine:
+    """Instantiate an engine"""
     if dbo.startswith("snowflake"):
         kwargs.setdefault(
-            "pool_pre_ping", False)  # Skip connection ping (e.g. "SELECT 1")
+            "pool_pre_ping", False
+        )  # Skip connection ping (e.g. "SELECT 1")
         kwargs.setdefault(
-            "pool_reset_on_return", None)  # Do nothing on connection "check-in"
+            "pool_reset_on_return", None
+        )  # Do nothing on connection "check-in"
         kwargs.setdefault(
-            "_initialize", False)  # Skip "first_connect" initialization
+            "_initialize", False
+        )  # Skip "first_connect" initialization
     else:
         kwargs.setdefault("pool_pre_ping", True)
 
@@ -111,8 +111,7 @@ def create_engine(
 
     if dbo.startswith("snowflake:"):
         db_execute(
-            engine,
-            "alter session set quoted_identifiers_ignore_case = true;"
+            engine, "alter session set quoted_identifiers_ignore_case = true;"
         )
 
     return engine

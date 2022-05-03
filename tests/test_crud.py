@@ -7,12 +7,7 @@ from starlette.exceptions import HTTPException
 
 from apitoolbox import crud
 from apitoolbox.types import NonNegativeInt
-from tests.data.people import (
-    PEOPLE_DATA,
-    Person,
-    PersonRequestModel,
-    load_people,
-)
+from tests.data.people import PEOPLE_DATA, Person, PersonRequestModel, load_people
 
 
 @pytest.fixture(name="mock_sqlalchemy_filters")
