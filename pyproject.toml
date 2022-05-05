@@ -12,7 +12,7 @@ SQLAlchemy = "^1.4.36"
 itsdangerous = "^2.1.2"
 python-dateutil = "^2.8.2"
 passlib = "^1.7.4"
-sqlalchemy-filters = {git = "git@github.com:deniszorinets/sqlalchemy-filters.git", rev = "v0.13.0"}
+sqlalchemy-filters = {url = "https://github.com/deniszorinets/sqlalchemy-filters/archive/refs/tags/v0.13.0.zip"}
 python-multipart = "^0.0.5"
 email-validator = "^1.2.0"
 
