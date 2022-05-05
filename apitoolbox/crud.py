@@ -1,13 +1,12 @@
 """ Generic CRUD operations """
+from typing import Any, Dict, List, Union
 from uuid import UUID
-from typing import List, Dict, Any, Union
 
 import sqlalchemy.exc
 from pydantic import BaseModel, PositiveInt
-from starlette.exceptions import HTTPException
-from starlette.concurrency import run_in_threadpool
-
 from sqlalchemy_filters import apply_filters, apply_sort
+from starlette.concurrency import run_in_threadpool
+from starlette.exceptions import HTTPException
 
 from . import models, types
 
@@ -17,15 +16,15 @@ from . import models, types
 
 
 async def list_instances(
-        cls: models.BASE,
-        session: models.Session,
-        filter_spec: List[Dict[str, Any]] = None,
-        sort_spec: List[Dict[str, str]] = None,
-        offset: types.NonNegativeInt = 0,
-        limit: PositiveInt = None,
-        options: Any = None
+    cls: models.BASE,
+    session: models.Session,
+    filter_spec: List[Dict[str, Any]] = None,
+    sort_spec: List[Dict[str, str]] = None,
+    offset: types.NonNegativeInt = 0,
+    limit: PositiveInt = None,
+    options: Any = None,
 ) -> List[dict]:
-    """ Return all instances of cls """
+    """Return all instances of cls"""
     query = session.query(cls)
     if filter_spec:
         query = apply_filters(query, filter_spec)
@@ -46,12 +45,12 @@ async def list_instances(
 
 
 async def count_instances(
-        cls: models.BASE,
-        session: models.Session,
-        filter_spec: List[Dict[str, Any]] = None,
-        sort_spec: List[Dict[str, Any]] = None,
+    cls: models.BASE,
+    session: models.Session,
+    filter_spec: List[Dict[str, Any]] = None,
+    sort_spec: List[Dict[str, Any]] = None,
 ) -> int:
-    """ Total count of instances matching the given criteria """
+    """Total count of instances matching the given criteria"""
     query = session.query(cls)
     if filter_spec:
         query = apply_filters(query, filter_spec)
@@ -65,11 +64,9 @@ async def count_instances(
 
 
 async def create_instance(
-        cls: models.BASE,
-        session: models.Session,
-        data: BaseModel
+    cls: models.BASE, session: models.Session, data: BaseModel
 ) -> dict:
-    """ Create an instances of cls with the provided data """
+    """Create an instances of cls with the provided data"""
     instance = cls(**data.dict())
 
     def _create():
@@ -79,17 +76,17 @@ async def create_instance(
 
     try:
         return await run_in_threadpool(_create)
-    except sqlalchemy.exc.IntegrityError as ex:
-        raise HTTPException(status_code=409, detail=str(ex.orig))
+    except sqlalchemy.exc.IntegrityError as exc:
+        raise HTTPException(status_code=409, detail=str(exc.orig)) from exc
 
 
 async def retrieve_instance(
-        cls: models.BASE,
-        session: models.Session,
-        instance_id: UUID,
-        options: Any = None
+    cls: models.BASE,
+    session: models.Session,
+    instance_id: UUID,
+    options: Any = None,
 ) -> dict:
-    """ Get an instance of cls by UUID """
+    """Get an instance of cls by UUID"""
     query = session.query(cls)
 
     if options:
@@ -108,11 +105,12 @@ async def retrieve_instance(
 
 
 async def update_instance(
-        cls: models.BASE,
-        session: models.Session,
-        instance_id: UUID,
-        data: Union[BaseModel, dict]) -> dict:
-    """ Partial update an instance using the provided data """
+    cls: models.BASE,
+    session: models.Session,
+    instance_id: UUID,
+    data: Union[BaseModel, dict],
+) -> dict:
+    """Partial update an instance using the provided data"""
 
     if isinstance(data, BaseModel):
         update_data = data.dict(exclude_unset=True)
@@ -135,11 +133,9 @@ async def update_instance(
 
 
 async def delete_instance(
-        cls: models.BASE,
-        session: models.Session,
-        instance_id: UUID
+    cls: models.BASE, session: models.Session, instance_id: UUID
 ) -> dict:
-    """ Delete an instance by UUID """
+    """Delete an instance by UUID"""
 
     def _delete():
         instance = session.query(cls).get(instance_id)

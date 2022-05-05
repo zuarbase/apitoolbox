@@ -31,7 +31,5 @@ BASE.metadata.create_all(bind=bind)
 
 # Add an endpoint
 @app.get("/users")
-async def list_users(
-        request: Request
-):
+async def list_users(request: Request):
     return await crud.list_instances(MyUser, request.state.session)

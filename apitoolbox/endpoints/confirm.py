@@ -1,12 +1,11 @@
 """ Confirmation of user email addresses """
-import os
 import logging
+import os
 from typing import Union
 
-from itsdangerous import URLSafeTimedSerializer, BadData
-
-from starlette.responses import HTMLResponse, JSONResponse
+from itsdangerous import BadData, URLSafeTimedSerializer
 from starlette.concurrency import run_in_threadpool
+from starlette.responses import HTMLResponse, JSONResponse
 
 from apitoolbox import models, tz, utils
 
@@ -14,20 +13,22 @@ logger = logging.getLogger(__name__)
 
 
 class ConfirmEndpoint:
-    """ Class-base endpoint for email confirmation """
+    """Class-base endpoint for email confirmation"""
 
     ERROR_TEMPLATE = os.path.join(
-        os.path.dirname(__file__), "templates", "failed_email_confirmation.html"
+        os.path.dirname(__file__),
+        "templates",
+        "failed_email_confirmation.html",
     )
 
     def __init__(
-            self,
-            user_cls,
-            secret,
-            location: str = "/login",
-            max_age: int = None,
-            salt: str = None,
-            template: str = ERROR_TEMPLATE,
+        self,
+        user_cls,
+        secret,
+        location: str = "/login",
+        max_age: int = None,
+        salt: str = None,
+        template: str = ERROR_TEMPLATE,
     ):
         self.user_cls = user_cls
         self.secret = secret
@@ -36,11 +37,8 @@ class ConfirmEndpoint:
         self.max_age = max_age
         self.template = template
 
-    def render(
-            self,
-            **kwargs
-    ) -> str:
-        """ Render the template using the passed parameters """
+    def render(self, **kwargs) -> str:
+        """Render the template using the passed parameters"""
         kwargs.setdefault("error", "")
         kwargs.setdefault("title", "APIToolbox")
         kwargs.setdefault("email", "")
@@ -48,11 +46,11 @@ class ConfirmEndpoint:
         return utils.render(self.template, **kwargs)
 
     async def on_get(
-            self,
-            session: models.Session,
-            token,
+        self,
+        session: models.Session,
+        token,
     ) -> Union[HTMLResponse, JSONResponse]:
-        """ Handle GET requests """
+        """Handle GET requests"""
 
         def _confirm() -> Union[dict, str]:
             try:
@@ -71,9 +69,7 @@ class ConfirmEndpoint:
             user = self.user_cls.get_by_email(session, email)
             if not user:
                 logger.info("User not found: %s", email)
-                return self.render(
-                    error=f"User not found: {email}"
-                )
+                return self.render(error=f"User not found: {email}")
 
             if user.confirmed:
                 logger.info(
@@ -93,8 +89,4 @@ class ConfirmEndpoint:
             return HTMLResponse(status_code=400, content=result)
 
         headers = {"location": self.location}
-        return JSONResponse(
-            content=result,
-            status_code=303,
-            headers=headers
-        )
+        return JSONResponse(content=result, status_code=303, headers=headers)

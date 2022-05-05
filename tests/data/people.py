@@ -3,9 +3,9 @@ from datetime import datetime
 from uuid import UUID
 
 import sqlalchemy
+from pydantic import BaseModel, PositiveInt, constr  # pylint: disable=no-name-in-module
 from sqlalchemy.orm import Session
 from sqlalchemy.types import CHAR
-from pydantic import BaseModel, PositiveInt, constr
 
 from apitoolbox import models
 
@@ -17,40 +17,32 @@ PEOPLE_DATA = [
 ]
 
 
-class Person(models.BASE, models.GuidMixin, models.TimestampMixin):
+class Person(
+    models.BASE, models.GuidMixin, models.TimestampMixin
+):  # pylint: disable=too-few-public-methods
     __tablename__ = "people"
 
     name = sqlalchemy.Column(
-        sqlalchemy.String(255),
-        nullable=False,
-        unique=True
+        sqlalchemy.String(255), nullable=False, unique=True
     )
 
-    order = sqlalchemy.Column(
-        sqlalchemy.Integer,
-        nullable=False,
-        unique=True
-    )
+    order = sqlalchemy.Column(sqlalchemy.Integer, nullable=False, unique=True)
 
-    gender = sqlalchemy.Column(
-        CHAR(1),
-        nullable=False
-    )
+    gender = sqlalchemy.Column(CHAR(1), nullable=False)
 
-    age = sqlalchemy.Column(
-        sqlalchemy.Integer,
-        nullable=False
-    )
+    age = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
 
 
-class PersonRequestModel(BaseModel):
+class PersonRequestModel(BaseModel):  # pylint: disable=too-few-public-methods
     name: constr(max_length=255)
     order: int
     gender: constr(min_length=1, max_length=1)
     age: PositiveInt
 
 
-class PersonResponseModel(PersonRequestModel):
+class PersonResponseModel(
+    PersonRequestModel
+):  # pylint: disable=too-few-public-methods
     id: UUID
     created_at: datetime
     updated_at: datetime

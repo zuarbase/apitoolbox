@@ -29,20 +29,23 @@ def test_groups_endpoint(session, loop):
             session, group.id, permission_ids, models.Permission
         )
     )
-    assert group_permissions_list == sorted([
-        {
-            "id": str(permissions[0].id),
-            "name": permissions[0].name,
-            "created_at": permissions[0].created_at.isoformat(),
-            "updated_at": permissions[0].updated_at.isoformat(),
-        },
-        {
-            "id": str(permissions[1].id),
-            "name": permissions[1].name,
-            "created_at": permissions[1].created_at.isoformat(),
-            "updated_at": permissions[1].updated_at.isoformat(),
-        }
-    ], key=lambda obj: obj["id"])
+    assert group_permissions_list == sorted(
+        [
+            {
+                "id": str(permissions[0].id),
+                "name": permissions[0].name,
+                "created_at": permissions[0].created_at.isoformat(),
+                "updated_at": permissions[0].updated_at.isoformat(),
+            },
+            {
+                "id": str(permissions[1].id),
+                "name": permissions[1].name,
+                "created_at": permissions[1].created_at.isoformat(),
+                "updated_at": permissions[1].updated_at.isoformat(),
+            },
+        ],
+        key=lambda obj: obj["id"],
+    )
 
     # List Group Permissions
     group_permissions = loop.run_until_complete(
@@ -52,24 +55,25 @@ def test_groups_endpoint(session, loop):
 
     # Set Group members
     group_users_list = loop.run_until_complete(
-        endpoint.set_group_members(
-            session, group.id, user_ids, models.User
-        )
+        endpoint.set_group_members(session, group.id, user_ids, models.User)
     )
-    assert group_users_list == sorted([
-        {
-            "id": str(users[0].id),
-            "username": users[0].username,
-            "created_at": users[0].created_at.isoformat(),
-            "updated_at": users[0].updated_at.isoformat(),
-        },
-        {
-            "id": str(users[1].id),
-            "username": users[1].username,
-            "created_at": users[1].created_at.isoformat(),
-            "updated_at": users[1].updated_at.isoformat(),
-        }
-    ], key=lambda obj: obj["id"])
+    assert group_users_list == sorted(
+        [
+            {
+                "id": str(users[0].id),
+                "username": users[0].username,
+                "created_at": users[0].created_at.isoformat(),
+                "updated_at": users[0].updated_at.isoformat(),
+            },
+            {
+                "id": str(users[1].id),
+                "username": users[1].username,
+                "created_at": users[1].created_at.isoformat(),
+                "updated_at": users[1].updated_at.isoformat(),
+            },
+        ],
+        key=lambda obj: obj["id"],
+    )
 
     # List Group members
     group_users = loop.run_until_complete(

@@ -2,11 +2,8 @@
 import logging
 from typing import Container, Dict, List, Optional, Sequence, Tuple
 
-from fastapi import Request
-from fastapi import status
-from starlette.authentication import (
-    AuthenticationBackend, AuthCredentials, SimpleUser
-)
+from fastapi import Request, status
+from starlette.authentication import AuthCredentials, AuthenticationBackend, SimpleUser
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 from starlette.requests import HTTPConnection
@@ -17,19 +14,19 @@ logger = logging.getLogger(__name__)
 
 
 class PayloadAuthBackend(AuthenticationBackend):
-    """ Get auth information from the request payload """
+    """Get auth information from the request payload"""
 
     def __init__(
-            self,
-            user_cls: type = None,
-            admin_scope: str = ADMIN_SCOPE,
+        self,
+        user_cls: type = None,
+        admin_scope: str = ADMIN_SCOPE,
     ):
         super().__init__()
         self.user_cls = user_cls
         self.admin_scope = admin_scope
 
     async def scopes(self, payload: Dict[str, str]) -> List[str]:
-        """ Return the list of scopes """
+        """Return the list of scopes"""
         if "scopes" in payload:
             scopes = payload["scopes"]
         elif "permissions" in payload:
@@ -46,15 +43,15 @@ class PayloadAuthBackend(AuthenticationBackend):
         return scopes
 
     async def authenticate(
-            self, conn: HTTPConnection
+        self, conn: HTTPConnection
     ) -> Optional[Tuple["AuthCredentials", "BaseUser"]]:
         try:
             payload = conn.state.payload
-        except AttributeError:
+        except AttributeError as exc:
             raise RuntimeError(
                 "Missing 'request.state.payload': "
                 "try adding 'middleware.UpstreamPayloadMiddleware'"
-            )
+            ) from exc
 
         username = payload.get("username")
         if not username:
@@ -63,11 +60,11 @@ class PayloadAuthBackend(AuthenticationBackend):
         if self.user_cls:
             try:
                 session = conn.state.session
-            except AttributeError:
+            except AttributeError as exc:
                 raise RuntimeError(
                     "Missing 'request.state.session': "
                     "try adding 'middleware.SessionMiddleware'"
-                )
+                ) from exc
 
             user = await run_in_threadpool(
                 self.user_cls.get_by_username, session, username
@@ -99,11 +96,7 @@ def validate_authenticated(request: Request):
 class ScopeValidator:
     """Base class for scope validators."""
 
-    def __init__(
-            self,
-            scopes: Sequence[str],
-            admin_scope: str = ADMIN_SCOPE
-    ):
+    def __init__(self, scopes: Sequence[str], admin_scope: str = ADMIN_SCOPE):
         self.scopes = scopes
         self.admin_scope = admin_scope
 
@@ -127,6 +120,7 @@ class AllScopesValidator(ScopeValidator):
         ...    ))
         ... ])
     """
+
     def __call__(self, request: Request):
         super().__call__(request)
 
@@ -151,6 +145,7 @@ class AnyScopeValidator(ScopeValidator):
         ...    ))
         ... ])
     """
+
     def __call__(self, request: Request):
         super().__call__(request)
 
@@ -175,10 +170,7 @@ class AdminValidator(ScopeValidator):
         ... ])
     """
 
-    def __init__(
-            self,
-            admin_scope: str = ADMIN_SCOPE
-    ):
+    def __init__(self, admin_scope: str = ADMIN_SCOPE):
         super().__init__(scopes=[], admin_scope=admin_scope)
 
     def __call__(self, request: Request):

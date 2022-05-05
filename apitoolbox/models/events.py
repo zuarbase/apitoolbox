@@ -41,13 +41,15 @@ def _after_configured():
             user_cls.groups = relationship(
                 group_cls,
                 secondary=group_membership_table,
-                order_by=group_cls.id
+                order_by=group_cls.id,
+                overlaps="users",
             )
         if not hasattr(group_cls, "users"):
             group_cls.users = relationship(
                 user_cls,
                 secondary=group_membership_table,
-                order_by=user_cls.id
+                order_by=user_cls.id,
+                overlaps="groups",
             )
 
     user_permissions_table = associations.get("user_permissions")
@@ -67,13 +69,15 @@ def _after_configured():
             user_cls.user_permissions = relationship(
                 permission_cls,
                 secondary=user_permissions_table,
-                order_by=permission_cls.id
+                order_by=permission_cls.id,
+                overlaps="users",
             )
         if not hasattr(permission_cls, "users"):
             permission_cls.users = relationship(
                 user_cls,
                 secondary=user_permissions_table,
-                order_by=user_cls.id
+                order_by=user_cls.id,
+                overlaps="user_permissions",
             )
 
     group_permissions_table = associations.get("group_permissions")
@@ -93,30 +97,38 @@ def _after_configured():
             group_cls.permissions = relationship(
                 permission_cls,
                 secondary=group_permissions_table,
-                order_by=permission_cls.id
+                order_by=permission_cls.id,
+                overlaps="group_permissions",
             )
         if not hasattr(permission_cls, "groups"):
             permission_cls.groups = relationship(
                 group_cls,
                 secondary=group_permissions_table,
-                order_by=group_cls.id
+                order_by=group_cls.id,
+                overlaps="permissions",
             )
 
     def _permissions(user):
         session = inspect(user).session
-        return session.query(permission_cls) \
-            .join(user_permissions_table, user_cls) \
-            .filter(user_cls.id == user.id) \
+        return (
+            session.query(permission_cls)
+            .join(user_permissions_table, user_cls)
+            .filter(user_cls.id == user.id)
             .union(
                 session.query(permission_cls)
                 .join(group_permissions_table)
                 .join(group_cls)
                 .join(group_membership_table)
                 .join(user_cls)
-                .filter(user_cls.id == user.id))
+                .filter(user_cls.id == user.id)
+            )
+        )
 
-    if user_cls and not hasattr(user_cls, "permissions") and \
-            user_permissions_table is not None and \
-            group_permissions_table is not None and \
-            group_membership_table is not None:
+    if (
+        user_cls
+        and not hasattr(user_cls, "permissions")
+        and user_permissions_table is not None
+        and group_permissions_table is not None
+        and group_membership_table is not None
+    ):
         user_cls.permissions = _permissions

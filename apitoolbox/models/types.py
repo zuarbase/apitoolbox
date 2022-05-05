@@ -1,12 +1,11 @@
 """ SQLAlchemy types - particularly for columns """
-import uuid
 import json
+import uuid
 
-from sqlalchemy.ext.mutable import MutableDict
-
-from sqlalchemy.sql import operators
-from sqlalchemy.types import String, TypeDecorator, CHAR, TEXT
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.sql import operators
+from sqlalchemy.types import CHAR, TEXT, String, TypeDecorator
 
 
 class GUID(TypeDecorator):
@@ -18,7 +17,10 @@ class GUID(TypeDecorator):
     https://docs.sqlalchemy.org/en/latest/core/custom_types.html
     Backend-agnostic GUID Type
     """
+
     impl = CHAR
+
+    cache_ok = True
 
     def load_dialect_impl(self, dialect):
         if dialect.name == "postgresql":
@@ -31,9 +33,9 @@ class GUID(TypeDecorator):
         if dialect.name == "postgresql":
             return str(value)
         if not isinstance(value, uuid.UUID):
-            return "%.32x" % uuid.UUID(value).int
+            return f"{uuid.UUID(value).int:032x}"
         # hexstring
-        return "%.32x" % value.int
+        return f"{value.int:032x}"
 
     def process_result_value(self, value, dialect):
         if value is None:
@@ -51,10 +53,11 @@ class GUID(TypeDecorator):
 
 
 class JSONEncodedDict(TypeDecorator):
-    """Represents an immutable structure as a json-encoded string.
-    """
+    """Represents an immutable structure as a json-encoded string."""
 
     impl = TEXT
+
+    cache_ok = False
 
     _OPERATORS_FOR_STR = (
         operators.like_op,

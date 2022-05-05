@@ -15,18 +15,18 @@ Usage:
 >>> date1 = tz.date(2015, 1, 2)
 """
 import typing
+import zoneinfo
 
 # pylint: disable=unused-import
 from datetime import date, datetime, timedelta  # noqa
+
+import dateutil.parser
+
 # pylint: enable=unused-import
 
 
-import dateutil.parser
-import pytz
-import tzlocal
-
-LOCAL = tzlocal.get_localzone()
-UTC = pytz.utc
+LOCAL = datetime.utcnow().astimezone().tzinfo
+UTC = zoneinfo.ZoneInfo("UTC")
 
 
 def as_datetime(value: typing.Union[str, date, datetime]) -> datetime:
@@ -35,7 +35,7 @@ def as_datetime(value: typing.Union[str, date, datetime]) -> datetime:
         value = parse(value)
 
     if not value.tzinfo:
-        value = LOCAL.localize(value)
+        value = value.replace(tzinfo=LOCAL)
 
     return as_utc(value)
 

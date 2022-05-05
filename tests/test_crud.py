@@ -2,16 +2,12 @@ import uuid
 
 import pytest
 import sqlalchemy.exc
-
-from pydantic import PositiveInt
+from pydantic import PositiveInt  # pylint: disable=no-name-in-module
 from starlette.exceptions import HTTPException
 
 from apitoolbox import crud
 from apitoolbox.types import NonNegativeInt
-
-from tests.data.people import (
-    load_people, Person, PersonRequestModel, PEOPLE_DATA
-)
+from tests.data.people import PEOPLE_DATA, Person, PersonRequestModel, load_people
 
 
 @pytest.fixture(name="mock_sqlalchemy_filters")
@@ -20,17 +16,17 @@ def fixture_mock_sqlalchemy_filters(mocker):
         return query
 
     apply_filters = mocker.patch(
-        "apitoolbox.crud.apply_filters", side_effect=__query)
+        "apitoolbox.crud.apply_filters", side_effect=__query
+    )
     apply_sort = mocker.patch(
-        "apitoolbox.crud.apply_sort", side_effect=__query)
+        "apitoolbox.crud.apply_sort", side_effect=__query
+    )
     return apply_filters, apply_sort
 
 
 def test_crud_list(session, loop):
     expected = [person.as_dict() for person in load_people(session)]
-    actual = loop.run_until_complete(
-        crud.list_instances(Person, session)
-    )
+    actual = loop.run_until_complete(crud.list_instances(Person, session))
     assert expected == actual
 
 
@@ -55,9 +51,11 @@ def test_crud_list_query(mocker, loop, mock_sqlalchemy_filters):
     offset = NonNegativeInt(10)
     limit = PositiveInt(50)
 
-    loop.run_until_complete(crud.list_instances(
-        Person, session, filter_spec, sort_spec, offset, limit, options
-    ))
+    loop.run_until_complete(
+        crud.list_instances(
+            Person, session, filter_spec, sort_spec, offset, limit, options
+        )
+    )
     assert apply_filters.call_args == mocker.call(mock_query, filter_spec)
     assert apply_sort.call_args == mocker.call(mock_query, sort_spec)
     assert mock_query.options.call_args == mocker.call(options)
@@ -67,9 +65,7 @@ def test_crud_list_query(mocker, loop, mock_sqlalchemy_filters):
 
 def test_crud_count(session, loop):
     data = load_people(session)
-    actual = loop.run_until_complete(
-        crud.count_instances(Person, session)
-    )
+    actual = loop.run_until_complete(crud.count_instances(Person, session))
     assert len(data) == actual
 
 
@@ -102,9 +98,7 @@ def test_crud_create(session, loop):
 
 def test_crud_create_409(mocker, loop):
     exc = sqlalchemy.exc.IntegrityError(
-        statement="fake statement",
-        params={},
-        orig=Person
+        statement="fake statement", params={}, orig=Person
     )
 
     session = mocker.Mock()
@@ -190,9 +184,7 @@ def test_crud_update_partial(session, loop):
 
     assert person.name == "alice"
 
-    data = {
-        "name": "edith"
-    }
+    data = {"name": "edith"}
 
     result = loop.run_until_complete(
         crud.update_instance(Person, session, person.id, data)
@@ -210,7 +202,7 @@ def test_crud_update_404(session, loop):
                 Person,
                 session,
                 uuid.uuid4(),
-                PersonRequestModel(**PEOPLE_DATA[0])
+                PersonRequestModel(**PEOPLE_DATA[0]),
             )
         )
 

@@ -1,15 +1,13 @@
-import os
 import asyncio
 
-import sqlalchemy
 import pytest
-
+import sqlalchemy
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from apitoolbox import models
 
-DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_URL = "sqlite:///sqlite.db?check_same_thread=False"
 
 
 @pytest.fixture(scope="function", name="loop")
@@ -25,7 +23,6 @@ def engine_fixture() -> sqlalchemy.engine.Engine:
 
 @pytest.fixture(scope="function", name="session")
 def session_fixture(engine):
-
     def _drop_all():
         meta = sqlalchemy.MetaData()
         meta.reflect(bind=engine)
@@ -43,10 +40,7 @@ def session_fixture(engine):
 
 @pytest.fixture(scope="function", name="app")
 def app_fixture(engine):
-    app = FastAPI(
-        title="apitoolbox",
-        version="0.0.0"
-    )
+    app = FastAPI(title="apitoolbox", version="0.0.0")
     return app
 
 

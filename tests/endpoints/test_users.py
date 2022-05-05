@@ -25,20 +25,23 @@ def test_users_endpoint(session, loop):
             session, user.id, permission_ids, models.Permission
         )
     )
-    assert user_permissions_list == sorted([
-        {
-            "id": str(permissions[0].id),
-            "name": permissions[0].name,
-            "created_at": permissions[0].created_at.isoformat(),
-            "updated_at": permissions[0].updated_at.isoformat(),
-        },
-        {
-            "id": str(permissions[1].id),
-            "name": permissions[1].name,
-            "created_at": permissions[1].created_at.isoformat(),
-            "updated_at": permissions[1].updated_at.isoformat(),
-        }
-    ], key=lambda obj: obj["id"])
+    assert user_permissions_list == sorted(
+        [
+            {
+                "id": str(permissions[0].id),
+                "name": permissions[0].name,
+                "created_at": permissions[0].created_at.isoformat(),
+                "updated_at": permissions[0].updated_at.isoformat(),
+            },
+            {
+                "id": str(permissions[1].id),
+                "name": permissions[1].name,
+                "created_at": permissions[1].created_at.isoformat(),
+                "updated_at": permissions[1].updated_at.isoformat(),
+            },
+        ],
+        key=lambda obj: obj["id"],
+    )
 
     # List User Permissions
     user_permissions = loop.run_until_complete(

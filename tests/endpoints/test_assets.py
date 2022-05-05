@@ -1,10 +1,13 @@
+import asyncio
 import os
 import tempfile
-import asyncio
 from pathlib import Path
 
 import pytest
+
 from apitoolbox import endpoints
+
+loop = asyncio.new_event_loop()
 
 
 @pytest.fixture(scope="function", name="temp_dir")
@@ -15,7 +18,7 @@ def temp_dir_fixture():
 
 @pytest.fixture(scope="function", name="loop")
 def loop_fixture():
-    return asyncio.get_event_loop()
+    return loop
 
 
 def test_assets_list(loop, temp_dir):
@@ -41,7 +44,7 @@ def test_assets_list(loop, temp_dir):
         "id": endpoint.generate_id("/file1"),
         "name": "file1",
         "type": "file",
-        "size": 0
+        "size": 0,
     }
 
 
@@ -78,7 +81,7 @@ def test_assets_list_subdir(loop, temp_dir):
     assert result == {
         "id": endpoint.generate_id("/dir1"),
         "name": "dir1",
-        "type": "directory"
+        "type": "directory",
     }
 
 
@@ -103,6 +106,6 @@ def test_assets_list_subdir_file(loop, temp_dir):
             "id": endpoint.generate_id("/dir1/file1"),
             "name": "file1",
             "type": "file",
-            "size": 0
+            "size": 0,
         }
     ]

@@ -10,11 +10,11 @@ from .types import GUID
 
 
 def create_group_membership_table(
-        table_name: str = "group_membership",
-        user_table_name: str = "users",
-        group_table_name: str = "groups",
+    table_name: str = "group_membership",
+    user_table_name: str = "users",
+    group_table_name: str = "groups",
 ) -> sqlalchemy.Table:
-    """ Generate a user <-> group association table """
+    """Generate a user <-> group association table"""
     table = sqlalchemy.Table(
         table_name,
         BASE.metadata,
@@ -25,14 +25,10 @@ def create_group_membership_table(
             default=uuid.uuid4,
         ),
         sqlalchemy.Column(
-            "group_id",
-            GUID,
-            sqlalchemy.ForeignKey(group_table_name + ".id")
+            "group_id", GUID, sqlalchemy.ForeignKey(group_table_name + ".id")
         ),
         sqlalchemy.Column(
-            "user_id",
-            GUID,
-            sqlalchemy.ForeignKey(user_table_name + ".id")
+            "user_id", GUID, sqlalchemy.ForeignKey(user_table_name + ".id")
         ),
         sqlalchemy.Column(
             "updated_at",
@@ -47,18 +43,18 @@ def create_group_membership_table(
             default=tz.utcnow,
             onupdate=tz.utcnow,
             nullable=False,
-        )
+        ),
     )
     table.__association__ = "group_membership"
     return table
 
 
 def create_user_permissions_table(
-        table_name: str = "user_permissions",
-        user_table_name: str = "users",
-        permission_table_name: str = "permissions",
+    table_name: str = "user_permissions",
+    user_table_name: str = "users",
+    permission_table_name: str = "permissions",
 ) -> sqlalchemy.Table:
-    """ Generate a user <-> permission association table """
+    """Generate a user <-> permission association table"""
     table = sqlalchemy.Table(
         table_name,
         BASE.metadata,
@@ -69,14 +65,12 @@ def create_user_permissions_table(
             default=uuid.uuid4,
         ),
         sqlalchemy.Column(
-            "user_id",
-            GUID,
-            sqlalchemy.ForeignKey(user_table_name + ".id")
+            "user_id", GUID, sqlalchemy.ForeignKey(user_table_name + ".id")
         ),
         sqlalchemy.Column(
             "permission_id",
             GUID,
-            sqlalchemy.ForeignKey(permission_table_name + ".id")
+            sqlalchemy.ForeignKey(permission_table_name + ".id"),
         ),
         sqlalchemy.Column(
             "updated_at",
@@ -91,18 +85,18 @@ def create_user_permissions_table(
             default=tz.utcnow,
             onupdate=tz.utcnow,
             nullable=False,
-        )
+        ),
     )
     table.__association__ = "user_permissions"
     return table
 
 
 def create_group_permissions_table(
-        table_name: str = "group_permissions",
-        group_table_name: str = "groups",
-        permission_table_name: str = "permissions",
+    table_name: str = "group_permissions",
+    group_table_name: str = "groups",
+    permission_table_name: str = "permissions",
 ) -> sqlalchemy.Table:
-    """ Generate a group <-> permission association table """
+    """Generate a group <-> permission association table"""
     table = sqlalchemy.Table(
         table_name,
         BASE.metadata,
@@ -113,14 +107,12 @@ def create_group_permissions_table(
             default=uuid.uuid4,
         ),
         sqlalchemy.Column(
-            "group_id",
-            GUID,
-            sqlalchemy.ForeignKey(group_table_name + ".id")
+            "group_id", GUID, sqlalchemy.ForeignKey(group_table_name + ".id")
         ),
         sqlalchemy.Column(
             "permission_id",
             GUID,
-            sqlalchemy.ForeignKey(permission_table_name + ".id")
+            sqlalchemy.ForeignKey(permission_table_name + ".id"),
         ),
         sqlalchemy.Column(
             "updated_at",
@@ -135,7 +127,7 @@ def create_group_permissions_table(
             default=tz.utcnow,
             onupdate=tz.utcnow,
             nullable=False,
-        )
+        ),
     )
     table.__association__ = "group_permissions"
     return table
