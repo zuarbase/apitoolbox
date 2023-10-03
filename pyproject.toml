@@ -4,6 +4,9 @@ version = "0.13.0"
 description = "Full-stack async framework for Python."
 authors = ["Matthew Laue <matt@zuar.com>"]
 
+[tool.poetry.extras]
+dev-deps = []
+
 [tool.poetry.dependencies]
 python = "^3.9"
 fastapi = "^0.75.2"
