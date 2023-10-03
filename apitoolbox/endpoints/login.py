@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 class LoginEndpoint:
     """Class-based endpoint for login"""
+    # pylint: disable=too-many-instance-attributes
 
     DEFAULT_TEMPLATE = os.path.join(
         os.path.dirname(__file__), "templates", "login.html"
@@ -35,6 +36,7 @@ class LoginEndpoint:
         require_confirmation: bool = False,
         register_url: str = None,
     ):
+        # pylint: disable=too-many-arguments
         assert inspect.isclass(user_cls)
         self.secret = secret
         self.user_cls = user_cls

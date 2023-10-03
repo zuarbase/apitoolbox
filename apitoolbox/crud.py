@@ -25,6 +25,7 @@ async def list_instances(
     options: Any = None,
 ) -> List[dict]:
     """Return all instances of cls"""
+    # pylint: disable=too-many-arguments
     query = session.query(cls)
     if filter_spec:
         query = apply_filters(query, filter_spec)

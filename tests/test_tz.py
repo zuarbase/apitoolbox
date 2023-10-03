@@ -56,7 +56,7 @@ def test_utcnow():
 
 def test_utcdatetime():
     args = (2020, 3, 20, 22, 45, 0)
-    kwargs = dict(microsecond=0)
+    kwargs = {"microsecond": 0}
 
     result = tz.utcdatetime(*args, **kwargs)
     assert isinstance(result, datetime)

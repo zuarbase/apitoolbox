@@ -34,7 +34,6 @@ class User(BASE, SimpleUser, mixins.GuidMixin, mixins.TimestampMixin):
 
     @validates("username")
     def _set_name(self, _key: str, value: str) -> str:
-        # pylint: disable=no-self-use
         return value.lower()
 
     def verify(self, secret: str) -> bool:
