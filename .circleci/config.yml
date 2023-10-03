@@ -1,0 +1,81 @@
+version: 2.1
+
+orbs:
+  aws-ecr: circleci/aws-ecr@7.3.0
+
+executors:
+  docker-executor:
+    docker:
+      - image: cimg/python:3.9
+
+workflows:
+  main-workflow:
+    jobs:
+      - lint_test:
+          context:
+            - ZUAR-ECR
+            - ZUAR-PRIVATE-PYPI
+            - ZUAR-GITHUB
+          filters:
+            # and all branches
+            tags:
+              only: /^\d+\.\d+\.\d+([\.\-\_])?((a|b|rc|post|dev)\d*)?$/
+      - publish_py_package:
+          requires:
+            - lint_test
+          context:
+            - ZUAR-ECR
+            - ZUAR-GITHUB
+            - ZUAR-PRIVATE-PYPI
+          filters:
+            tags:
+              only: /^\d+\.\d+\.\d+([\.\-\_])?((a|b|rc|post|dev)\d*)?$/
+            branches:
+              ignore: /.*/
+
+jobs:
+  lint_test:
+    executor: docker-executor
+    environment: &_base_env_vars
+      MITTO_DOCKER_SETUP_DIR: "/tmp/mitto-docker-setup"
+    steps:
+      - checkout
+      - run: &_clone_submodules
+          name: Clone submodules
+          command: git submodule update --init --remote --merge
+      - setup_remote_docker: &_setup_remote_docker
+          version: 20.10.12
+          docker_layer_caching: true
+      - run: &_install_mitto_docker_setup
+          name: Download and unpack mitto-docker-setup
+          command: $GITHUB_CLONE_MITTO_DOCKER_SETUP $MITTO_DOCKER_SETUP_DIR
+      - aws-ecr/ecr-login:
+          aws-access-key-id: AWS_ACCESS_KEY_ID
+          aws-secret-access-key: AWS_SECRET_ACCESS_KEY
+          account-url: AWS_ECR_ACCOUNT_URL
+      - run:
+          name: Docker login
+          command: ./make.sh docker_login
+      - run:
+          name: Build local image
+          command: ./make.sh build_local_image
+      - run:
+          name: Build additional data
+          command: ./make.sh build_additional_data
+      - run:
+          name: Pylint
+          command: ./make.sh docker_pylint
+      - run:
+          name: Pytest
+          command: ./make.sh docker_test
+  publish_py_package:
+    executor: docker-executor
+    environment: *_base_env_vars
+    steps:
+      - checkout
+      - run: *_clone_submodules
+      - setup_remote_docker: *_setup_remote_docker
+      - run: *_install_mitto_docker_setup
+      - run:
+          name: Publish to the private pypi
+          command: timeout 60 ./make.sh build_and_publish_zuar_py_package $CIRCLE_TAG
