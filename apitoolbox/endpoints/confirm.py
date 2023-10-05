@@ -30,6 +30,7 @@ class ConfirmEndpoint:
         salt: str = None,
         template: str = ERROR_TEMPLATE,
     ):
+        # pylint: disable=too-many-arguments
         self.user_cls = user_cls
         self.secret = secret
         self.location = location

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class RegisterEndpoint:
     """Class-based endpoint for registration with confirmation"""
+    # pylint: disable=too-many-instance-attributes
 
     FORM_TEMPLATE = os.path.join(
         os.path.dirname(__file__), "templates", "register.html"
@@ -202,6 +203,7 @@ class RegisterEndpoint:
         **kwargs,
     ) -> Union[HTMLResponse, RedirectResponse]:
         """Handle POST requests"""
+        # pylint: disable=too-many-arguments
 
         base_url = str(base_url)
         email = EmailStr.validate(email)

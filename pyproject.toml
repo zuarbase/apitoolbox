@@ -4,6 +4,9 @@ version = "0.13.0"
 description = "Full-stack async framework for Python."
 authors = ["Matthew Laue <matt@zuar.com>"]
 
+[tool.poetry.extras]
+dev-deps = []
+
 [tool.poetry.dependencies]
 python = "^3.9"
 fastapi = "^0.75.2"
@@ -35,8 +38,7 @@ profile = "black"
 
 [tool.pylint.master]
 ignore = "CVS"
-cache-size = "500"
-disable = "C0114"
+disable = ["missing-module-docstring", "too-few-public-methods"]
 
 [tool.pylint.similariries]
 ignore-comments = "yes"
@@ -46,6 +48,9 @@ min-similarity-lines = "4"
 
 [tool.pylint.format]
 max-line-length = 79
+
+[tool.pylint.'MESSAGES CONTROL']
+extension-pkg-whitelist = "pydantic"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

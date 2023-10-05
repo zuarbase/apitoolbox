@@ -7,7 +7,7 @@ import pytest
 
 from apitoolbox import endpoints
 
-loop = asyncio.new_event_loop()
+event_loop = asyncio.new_event_loop()
 
 
 @pytest.fixture(scope="function", name="temp_dir")
@@ -18,7 +18,7 @@ def temp_dir_fixture():
 
 @pytest.fixture(scope="function", name="loop")
 def loop_fixture():
-    return loop
+    return event_loop
 
 
 def test_assets_list(loop, temp_dir):

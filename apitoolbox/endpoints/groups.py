@@ -32,6 +32,8 @@ class GroupsEndpoint(BaseCrudEndpoint):
         await self.retrieve(session, group_id)
 
         group = session.query(self.entity_cls).get(group_id)
+
+        # pylint: disable=duplicate-code
         permissions = (
             session.query(permission_cls)
             .filter(permission_cls.id.in_(permission_ids))

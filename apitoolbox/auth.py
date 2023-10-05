@@ -3,7 +3,9 @@ import logging
 from typing import Container, Dict, List, Optional, Sequence, Tuple
 
 from fastapi import Request, status
-from starlette.authentication import AuthCredentials, AuthenticationBackend, SimpleUser
+from starlette.authentication import (
+    AuthCredentials, AuthenticationBackend, SimpleUser,
+)
 from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 from starlette.requests import HTTPConnection
@@ -134,7 +136,8 @@ class AllScopesValidator(ScopeValidator):
 
 
 class AnyScopeValidator(ScopeValidator):
-    """Validate that at least one defined scope exists in 'request.auth.scopes'.
+    """
+    Validate that at least one defined scope exists in 'request.auth.scopes'.
 
     Usage:
         >>> from fastapi import Depends

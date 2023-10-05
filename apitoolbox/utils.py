@@ -1,4 +1,5 @@
 """ Utility functions """
+import html
 import time
 import uuid
 from string import Template
@@ -32,6 +33,13 @@ def render(
         with open(path_or_template, "r", encoding="utf-8") as filp:
             contents = filp.read()
         template = Template(contents)
+
+    kwargs = {
+        # If you want to manually un-escape any string,
+        # you should wrap it in a class other than str/bytes.
+        key: html.escape(val) if isinstance(val, (str, bytes)) else val
+        for key, val in kwargs.items()
+    }
     return template.safe_substitute(**kwargs)
 
 

@@ -1,0 +1,4 @@
+[submodule "ci_tools"]
+	path = ci_tools
+	url = git@github.com:zuarbase/ci_tools.git
+	branch = main
