@@ -1,4 +1,5 @@
 """CRUD endpoints for users."""
+# pylint: disable=duplicate-code
 from typing import Any, Dict, List, Type
 from uuid import UUID
 
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from apitoolbox import models
 from apitoolbox.endpoints.base import BaseCrudEndpoint
+# pylint: enable=duplicate-code
 
 
 class UsersEndpoint(BaseCrudEndpoint):
