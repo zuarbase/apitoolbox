@@ -185,7 +185,7 @@ class AdminValidator(ScopeValidator):
         super().__call__(request)
 
         if request.state.zuar_service_name:
-            return True
+            return
 
         req_scopes = request.auth.scopes
 
