@@ -49,11 +49,16 @@ class PayloadAuthBackend(AuthenticationBackend):
     ) -> Optional[Tuple["AuthCredentials", "BaseUser"]]:
         try:
             payload = conn.state.payload
+            zuar_service_name = conn.state.zuar_service_name
         except AttributeError as exc:
             raise RuntimeError(
                 "Missing 'request.state.payload': "
                 "try adding 'middleware.UpstreamPayloadMiddleware'"
             ) from exc
+
+        if zuar_service_name:
+            user = SimpleUser(username=f"zuar_service_{zuar_service_name}")
+            return AuthCredentials([ADMIN_SCOPE]), user
 
         username = payload.get("username")
         if not username:
@@ -178,6 +183,9 @@ class AdminValidator(ScopeValidator):
 
     def __call__(self, request: Request):
         super().__call__(request)
+
+        if request.state.zuar_service_name:
+            return True
 
         req_scopes = request.auth.scopes
 

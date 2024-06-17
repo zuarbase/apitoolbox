@@ -13,6 +13,7 @@ from apitoolbox import db_registry
 from apitoolbox.models import Session
 
 PAYLOAD_HEADER_PREFIX = "x-payload-"
+HEADER_ZUAR_SERVICE_NAME = "x-zuar-internal-service"
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +64,16 @@ class UpstreamPayloadMiddleware(BaseHTTPMiddleware):
         self,
         app: ASGIApp,
         header_prefix: str = PAYLOAD_HEADER_PREFIX,
+        header_service_name: str = HEADER_ZUAR_SERVICE_NAME,
+        service_user_enabled: bool = False,
     ):
         super().__init__(app=app)
         self.header_prefix = header_prefix
+        self._header_service_name = header_service_name
+        self._service_user_enabled = service_user_enabled
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        request.state.zuar_service_name = None
         payload = {}
         for header_name in request.headers:
             if header_name.startswith(self.header_prefix):
@@ -77,7 +83,13 @@ class UpstreamPayloadMiddleware(BaseHTTPMiddleware):
                     payload[name] = value[0]
                 else:  # pragma: nocover
                     payload[name] = value
+
         request.state.payload = payload
+        if not payload and self._service_user_enabled:
+            request.state.zuar_service_name = request.headers.get(
+                self._header_service_name
+            )
+
         return await call_next(request)
 
 
@@ -91,6 +103,8 @@ class JwtMiddleware(BaseHTTPMiddleware):
         secret: str,
         cookie_name: str = "jwt",
         algorithms: Sequence[str] = ("HS256", "HS512"),
+        header_service_name: str = HEADER_ZUAR_SERVICE_NAME,
+        service_user_enabled: bool = False,
         **kwargs,
     ):
         super().__init__(app=app)
@@ -98,9 +112,18 @@ class JwtMiddleware(BaseHTTPMiddleware):
         self.cookie_name = cookie_name
         self.algorithms = algorithms
         self.kwargs = kwargs
+        self._header_service_name = header_service_name
+        self._service_user_enabled = service_user_enabled
 
     async def dispatch(self, request: Request, call_next) -> Response:
-        token = request.cookies.get(self.cookie_name)
+        request.state.zuar_service_name = None
+        request.state.payload = {}
+
+        token = (
+            request.cookies.get(self.cookie_name) or
+            request.query_params.get(self.cookie_name) or
+            request.headers.get(f"X-{self.cookie_name}")
+        )
         if token:
             try:
                 payload = jwt.decode(
@@ -114,5 +137,10 @@ class JwtMiddleware(BaseHTTPMiddleware):
                 logger.info("JWT decode error: %s", str(ex))
         else:
             logging.debug("%s: No JWT", str(request.url))
+
+        if not request.state.payload and self._service_user_enabled:
+            request.state.zuar_service_name = request.headers.get(
+                self._header_service_name
+            )
 
         return await call_next(request)
