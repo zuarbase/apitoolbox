@@ -38,7 +38,7 @@ def test_middleware_jwt(session, app, client):
 def test_middleware_jwt_bad_or_no_token(session, app, client):
     @app.get("/jwt")
     async def _get(request: Request):
-        return {"has_payload": hasattr(request.state, "payload")}
+        return {"empty_payload": request.state.payload}
 
     secret = "s0secret"
     app.add_middleware(middleware.JwtMiddleware, secret=secret)
@@ -46,12 +46,12 @@ def test_middleware_jwt_bad_or_no_token(session, app, client):
     # Test bad token
     res = client.get("/jwt", cookies={"jwt": "bad-jwt-token"})
     assert res.status_code == 200
-    assert res.json() == {"has_payload": False}
+    assert res.json() == {"empty_payload": {}}
 
     # Test without token
     res = client.get("/jwt")
     assert res.status_code == 200
-    assert res.json() == {"has_payload": False}
+    assert res.json() == {"empty_payload": {}}
 
 
 def test_middleware_session(engine, app, client):
