@@ -222,7 +222,10 @@ def test_payload_auth_backend_no_user_cls(mocker, loop):
     backend = auth.PayloadAuthBackend()
 
     mock_conn = mocker.Mock(
-        state=State({"payload": {"username": expected_username}})
+        state=State({
+        "payload": {"username": "user1"},
+        "zuar_service_name": None,
+    })
     )
     result = loop.run_until_complete(backend.authenticate(mock_conn))
     assert result is not None
@@ -266,7 +269,10 @@ def test_payload_auth_backend_missing_payload_error(mocker, loop):
 def test_payload_auth_backend_missing_session_error(mocker, loop):
     backend = auth.PayloadAuthBackend(user_cls=User)
 
-    mock_conn = mocker.Mock(state=State({"payload": {"username": "user1"}}))
+    mock_conn = mocker.Mock(state=State({
+        "payload": {"username": "user1"},
+        "zuar_service_name": None,
+    }))
     with pytest.raises(RuntimeError) as exc_info:
         loop.run_until_complete(backend.authenticate(mock_conn))
 
