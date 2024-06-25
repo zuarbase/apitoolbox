@@ -42,6 +42,8 @@ def get_or_create(url: str, **engine_kwargs) -> Engine:
         return register(url, **engine_kwargs)
 
 
-def get(url: str, **engine_kwargs) -> typing.Optional[Engine]:
+def get(  # pylint: disable=unused-argument
+    url: str, **engine_kwargs
+) -> typing.Optional[Engine]:
     with __LOCK:
         return __ENGINE_REGISTRY.get(url)
