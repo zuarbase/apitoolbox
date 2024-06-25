@@ -35,5 +35,13 @@ def register(
 
 def get_or_create(url: str, **engine_kwargs) -> Engine:
     """Get an engine from the registry or create it if does not exist."""
+    if existing_engine := get(url=url, **engine_kwargs):
+        return existing_engine
+
     with __LOCK:
-        return __ENGINE_REGISTRY.get(url) or register(url, **engine_kwargs)
+        return register(url, **engine_kwargs)
+
+
+def get(url: str, **engine_kwargs) -> typing.Optional[Engine]:
+    with __LOCK:
+        return __ENGINE_REGISTRY.get(url)
