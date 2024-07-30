@@ -1,11 +1,13 @@
 """ Login functionality """
+import copy
 import inspect
 import logging
 import os
+from datetime import datetime
 from typing import Optional, Union
 
 from starlette.concurrency import run_in_threadpool
-from starlette.responses import HTMLResponse, JSONResponse
+from starlette.responses import Response, HTMLResponse, JSONResponse
 
 from apitoolbox import models, tz, utils
 
@@ -135,25 +137,54 @@ class LoginEndpoint:
             )
 
         result = await self.payload(user_data)
-
-        expiry = tz.utcnow() + tz.timedelta(seconds=self.token_expiry)
-
-        # jwt_encode will convert this to an epoch inside the token
-        result["exp"] = expiry
-
-        token = await self.jwt_encode(result)
-        result["token"] = token
-        result["exp"] = expiry.isoformat()
-
-        headers = {"location": location or self.location}
+        result = await self.add_exp_to_payload(result)
+        result = await self.add_jwt_token_to_payload(result)
         response = JSONResponse(
-            content=result, status_code=303, headers=headers
+            content=result, status_code=303,
+            headers={"location": location or self.location}
         )
+        await self.set_jwt_cookie(payload=result, response=response)
+
+        return response
+
+    async def add_exp_to_payload(self, payload):
+        """Add expiry to the payload"""
+        result = copy.deepcopy(payload)
+        expiry = tz.utcnow() + tz.timedelta(seconds=self.token_expiry)
+        result["exp"] = expiry.isoformat()
+        return result
+
+    async def add_jwt_token_to_payload(self, payload):
+        """Add token to the payload"""
+        result = copy.deepcopy(payload)
+        expiry = self._get_expiry_dt_from_payload(result)
+        assert expiry
+        token = await self.jwt_encode({
+            **result,
+            # jwt_encode will convert this to an epoch inside the token
+            "exp": expiry,
+        })
+        result["token"] = token
+        return result
+
+    async def set_jwt_cookie(self, payload: dict, response: Response) -> dict:
+        result = copy.deepcopy(payload)
+        assert not result.get("password")
+        assert result["exp"]
+        assert result["token"]
+
+        expiry = self._get_expiry_dt_from_payload(result)
         response.set_cookie(
             self.cookie_name,
-            token,
+            result["token"],
             path="/",
             expires=int(expiry.timestamp()),
             secure=self.secure,
         )
-        return response
+        return result
+
+    def _get_expiry_dt_from_payload(self, payload) -> datetime | None:
+        try:
+            return datetime.fromisoformat(payload["exp"])
+        except KeyError:
+            return None
