@@ -65,10 +65,14 @@ async def count_instances(
 
 
 async def create_instance(
-    cls: models.BASE, session: models.Session, data: BaseModel
+    cls: models.BASE, session: models.Session, data: Union[BaseModel, dict],
 ) -> dict:
     """Create an instances of cls with the provided data"""
-    instance = cls(**data.dict())
+    if isinstance(data, BaseModel):
+        create_data = data.dict()
+    else:
+        create_data = data
+    instance = cls(**create_data)
 
     def _create():
         session.add(instance)

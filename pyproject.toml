@@ -8,7 +8,7 @@ authors = ["Matthew Laue <matt@zuar.com>"]
 dev-deps = []
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 fastapi = "^0.75.2"
 PyJWT = "^2.3.0"
 SQLAlchemy = "^1.4.36"
