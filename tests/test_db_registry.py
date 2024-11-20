@@ -1,6 +1,8 @@
+import time
 import pytest
 
 from apitoolbox import db_registry
+from apitoolbox.settings import DBRegistryRemoveItemStrategyEnum
 
 
 @pytest.fixture(name="mock_lock", autouse=True)
@@ -59,3 +61,33 @@ def test_get_or_create_by_url(mock_create_engine):
     assert registered_engine_2 is created_engine_2
 
     assert mock_create_engine.call_count == 2
+
+
+def test_periodic_cleanup(mocker, mock_create_engine):
+    db_registry.recreate_db_registry(
+        cleanup_interval_in_sec=0.1,
+        # refresh_item_ttl_on_get=db_registry_conf.refresh_item_ttl_on_get,
+        remove_item_strategy_enum=
+        DBRegistryRemoveItemStrategyEnum.DISPOSE_ENGINE,
+        registry_item_ttl_in_sec=2,
+    )
+
+    url = "/fake/url"
+    created_engine = db_registry.register(url)
+    assert created_engine
+    created_engine.dispose = mocker.Mock()
+    created_engine.pool.checkedout.return_value = 0
+
+    registered_engine = db_registry.get_or_create(url)
+    assert registered_engine is created_engine
+    assert not created_engine.dispose.called
+
+    # Wait for cleanup
+    time.sleep(3)
+
+    registered_engine = db_registry.get_or_create(url)
+    assert registered_engine is created_engine
+    assert created_engine.dispose.called
+
+    # Set settings back to default
+    db_registry.recreate_db_registry()

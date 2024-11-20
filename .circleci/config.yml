@@ -44,7 +44,6 @@ jobs:
           name: Clone submodules
           command: git submodule update --init --remote --merge
       - setup_remote_docker: &_setup_remote_docker
-          version: 20.10.12
           docker_layer_caching: true
       - run: &_install_mitto_docker_setup
           name: Download and unpack mitto-docker-setup
