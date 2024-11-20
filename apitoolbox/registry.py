@@ -121,6 +121,7 @@ class Registry(t.Generic[T]):
             )
         )
         if self._cleanup_interval:
+            self._stop_event = threading.Event()
             self._cleanup_thread = threading.Thread(
                 target=self._cleanup_task, daemon=True
             )
@@ -192,7 +193,7 @@ class Registry(t.Generic[T]):
 
     def _cleanup_task(self):
         """Periodically clean up expired items."""
-        while True:
+        while not self._stop_event.is_set():
             time.sleep(self._cleanup_interval)
             self._cleanup()
 
@@ -212,3 +213,11 @@ class Registry(t.Generic[T]):
         """Get the number of items in the registry."""
         with self._lock:
             return len(self._items)
+
+    def _del(self):
+        if self._cleanup_interval:
+            self._stop_event.set()
+            self._cleanup_thread.join()
+
+    def __del__(self):
+        self._del()
