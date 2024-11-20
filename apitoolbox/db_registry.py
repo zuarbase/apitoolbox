@@ -5,22 +5,31 @@ The registry is a single source of shared sqlalchemy engines.
 
 NOTE: there are both thread-safe and non thread-safe functions.
 """
-import threading
-import typing
-
 from sqlalchemy.engine import Connectable, Engine
 
 from apitoolbox import utils
+from apitoolbox.registry import (
+    CloseItemOnRemoveStrategy,
+    Registry,
+    RemoveItemStrategyBase,
+)
+from apitoolbox.settings import (
+    DBRegistryRemoveItemStrategyEnum,
+    DB_REGISTRY_CLEANUP_INTERVAL, DB_REGISTRY_ITEM_TTL,
+    DB_REGISTRY_REFRESH_ON_GET, DB_REGISTRY_REMOVE_ITEM_STRATEGY_ENUM,
+)
 
-__LOCK = threading.Lock()
 
-__ENGINE_REGISTRY: typing.Dict[str, Engine] = {}
+__ENGINE_REGISTRY = None
+__REGISTRY_ITEM_TTL = None
 
 
 def register(
-    bind: typing.Union[str, Connectable], pool_pre_ping=True, **engine_kwargs
+    bind: str | Connectable, pool_pre_ping=True, **engine_kwargs
 ) -> Engine:
     """Register an engine or create a new one (non thread-safe)."""
+    assert __ENGINE_REGISTRY is not None, "Registry not initialized"
+
     if isinstance(bind, str):
         engine = utils.create_engine(
             bind, pool_pre_ping=pool_pre_ping, **engine_kwargs
@@ -29,7 +38,19 @@ def register(
     else:
         engine = bind.engine
 
-    __ENGINE_REGISTRY[str(engine.url)] = engine
+    registry_key = str(engine.url)
+
+
+    __ENGINE_REGISTRY.set(
+        key=registry_key,
+        value=engine,
+        ttl=__REGISTRY_ITEM_TTL,
+        close_callback=lambda registry_item: (
+            (_engine := registry_item.value) and
+            _engine.pool.checkedout() == 0 and
+            (_engine.dispose() or True)
+        ),
+    )
     return bind
 
 
@@ -38,12 +59,50 @@ def get_or_create(url: str, **engine_kwargs) -> Engine:
     if existing_engine := get(url=url, **engine_kwargs):
         return existing_engine
 
-    with __LOCK:
-        return register(url, **engine_kwargs)
+    return register(url, **engine_kwargs)
 
 
 def get(  # pylint: disable=unused-argument
     url: str, **engine_kwargs
-) -> typing.Optional[Engine]:
-    with __LOCK:
-        return __ENGINE_REGISTRY.get(url)
+) -> Engine | None:
+    return __ENGINE_REGISTRY.get(url)
+
+
+def recreate_db_registry(
+    cleanup_interval_in_sec=DB_REGISTRY_CLEANUP_INTERVAL,
+    refresh_item_ttl_on_get=DB_REGISTRY_REFRESH_ON_GET,
+    remove_item_strategy_enum=DB_REGISTRY_REMOVE_ITEM_STRATEGY_ENUM,
+    registry_item_ttl_in_sec=DB_REGISTRY_ITEM_TTL,
+):
+    global __ENGINE_REGISTRY  # pylint: disable=global-statement
+    global __REGISTRY_ITEM_TTL  # pylint: disable=global-statement
+    previous_registry = __ENGINE_REGISTRY
+
+    new_registry = Registry[Engine](
+        cleanup_interval_in_sec=cleanup_interval_in_sec,
+        refresh_item_ttl_on_get=refresh_item_ttl_on_get,
+        remove_item_strategy=(
+            _remove_item_strategy_factory(remove_item_strategy_enum)
+        ),
+    )
+    if previous_registry:
+        previous_registry.copy_to(new_registry)
+
+    __ENGINE_REGISTRY = new_registry
+    __REGISTRY_ITEM_TTL = registry_item_ttl_in_sec
+
+
+def _remove_item_strategy_factory(
+    strategy_enum: DBRegistryRemoveItemStrategyEnum,
+) -> RemoveItemStrategyBase | None:
+    if strategy_enum == DBRegistryRemoveItemStrategyEnum.DEFAULT:
+        return None
+    if strategy_enum == DBRegistryRemoveItemStrategyEnum.DISPOSE_ENGINE:
+        # dispose engine, but do not remove it from the registry
+        return CloseItemOnRemoveStrategy()
+
+    raise ValueError(f"Invalid strategy: {strategy_enum}")
+
+
+# Initialize the registry
+recreate_db_registry()
