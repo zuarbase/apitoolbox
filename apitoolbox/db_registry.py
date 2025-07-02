@@ -6,6 +6,7 @@ The registry is a single source of shared sqlalchemy engines.
 NOTE: there are both thread-safe and non thread-safe functions.
 """
 from sqlalchemy.engine import Connectable, Engine
+from sqlalchemy.engine.url import make_url
 
 from apitoolbox import utils
 from apitoolbox.registry import (
@@ -38,7 +39,7 @@ def register(
     else:
         engine = bind.engine
 
-    registry_key = str(engine.url)
+    registry_key = str(make_url(str(engine.url)))
 
 
     __ENGINE_REGISTRY.set(
@@ -56,6 +57,7 @@ def register(
 
 def get_or_create(url: str, **engine_kwargs) -> Engine:
     """Get an engine from the registry or create it if does not exist."""
+    url = str(make_url(str(url))) if url else url
     if existing_engine := get(url=url, **engine_kwargs):
         return existing_engine
 

@@ -19,7 +19,7 @@ def fixture_mock_create_engine(mocker):
 
 
 def test_register_existing_engine(mocker, mock_create_engine):
-    url = "/fake/url"
+    url = "postgresql://localhost/fake/url"
     engine = mocker.Mock(url=url)
     engine.engine = engine  # Follow Connectable interface
 
@@ -29,8 +29,39 @@ def test_register_existing_engine(mocker, mock_create_engine):
     assert registered_engine is engine, "New engine instance was created."
 
 
+def test_ignoring_query_parameter_order_using_engige(
+    mocker, mock_create_engine
+):
+    url = "postgresql://localhost/fake/url?param1=value1&param2=value2"
+    engine = mocker.Mock(url=url)
+    engine.engine = engine  # Follow Connectable interface
+
+    db_registry.register(engine)
+
+    assert db_registry.get_or_create(url) is engine
+
+    # Different order of query parameters
+    assert db_registry.get_or_create(
+        "postgresql://localhost/fake/url?param2=value2&param1=value1"
+    ) is engine
+
+
+def test_ignoring_query_parameter_order_using_url(mock_create_engine):
+    url = "postgresql://localhost/fake/url?param1=value1&param2=value2"
+
+    db_registry.register(url)
+
+    engine = db_registry.get_or_create(url)
+    assert engine
+
+    # Different order of query parameters
+    assert db_registry.get_or_create(
+        "postgresql://localhost/fake/url?param2=value2&param1=value1"
+    ) is engine
+
+
 def test_register_url(mocker, mock_create_engine):
-    url = "/fake/url"
+    url = "postgresql://localhost/fake/url"
 
     kwargs = {"key1": "value1", "echo": True}
     created_engine = db_registry.register(url, **kwargs)
@@ -45,8 +76,8 @@ def test_register_url(mocker, mock_create_engine):
 
 
 def test_get_or_create_by_url(mock_create_engine):
-    url_1 = "/fake/url/1"
-    url_2 = "/fake/url/2"
+    url_1 = "postgresql://localhost/fake/url/1"
+    url_2 = "postgresql://localhost/fake/url/2"
 
     created_engine_1 = db_registry.get_or_create(url_1)
     assert created_engine_1
@@ -72,7 +103,7 @@ def test_periodic_cleanup(mocker, mock_create_engine):
         registry_item_ttl_in_sec=2,
     )
 
-    url = "/fake/url"
+    url = "postgresql://localhost/fake/url"
     created_engine = db_registry.register(url)
     assert created_engine
     created_engine.dispose = mocker.Mock()
