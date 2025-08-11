@@ -66,6 +66,7 @@ async def count_instances(
 
 async def create_instance(
     cls: models.BASE, session: models.Session, data: Union[BaseModel, dict],
+    commit: bool = True,
 ) -> dict:
     """Create an instances of cls with the provided data"""
     if isinstance(data, BaseModel):
@@ -76,7 +77,8 @@ async def create_instance(
 
     def _create():
         session.add(instance)
-        session.commit()
+        if commit:
+            session.commit()
         return session.merge(instance).as_dict()
 
     try:
@@ -114,6 +116,7 @@ async def update_instance(
     session: models.Session,
     instance_id: UUID,
     data: Union[BaseModel, dict],
+    commit: bool = True,
 ) -> dict:
     """Partial update an instance using the provided data"""
 
@@ -128,7 +131,8 @@ async def update_instance(
             return None
         for key, value in update_data.items():
             setattr(instance, key, value)
-        session.commit()
+        if commit:
+            session.commit()
         return session.merge(instance).as_dict()
 
     data = await run_in_threadpool(_update)
@@ -138,7 +142,8 @@ async def update_instance(
 
 
 async def delete_instance(
-    cls: models.BASE, session: models.Session, instance_id: UUID
+    cls: models.BASE, session: models.Session, instance_id: UUID,
+    commit: bool = True,
 ) -> dict:
     """Delete an instance by UUID"""
 
@@ -148,7 +153,8 @@ async def delete_instance(
             return None
         result = instance.as_dict()
         session.delete(instance)
-        session.commit()
+        if commit:
+            session.commit()
         return result
 
     data = await run_in_threadpool(_delete)
