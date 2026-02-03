@@ -16,6 +16,7 @@ workflows:
             - ZUAR-ECR
             - ZUAR-PRIVATE-PYPI
             - ZUAR-GITHUB
+            - ZUAR-MITTO-DOCKER-SETUP-CREDS
           filters:
             # and all branches
             tags:
@@ -45,9 +46,9 @@ jobs:
           command: git submodule update --init --remote --merge
       - setup_remote_docker: &_setup_remote_docker
           docker_layer_caching: true
-      - run: &_install_mitto_docker_setup
-          name: Download and unpack mitto-docker-setup
-          command: $GITHUB_CLONE_MITTO_DOCKER_SETUP $MITTO_DOCKER_SETUP_DIR
+      - run: &_install_mitto_dev_runtime
+          name: Install mitto-dev-runtime
+          command: ./make.sh install_mitto_dev_runtime
       - aws-ecr/ecr-login:
           aws-access-key-id: AWS_ACCESS_KEY_ID
           aws-secret-access-key: AWS_SECRET_ACCESS_KEY
@@ -74,7 +75,7 @@ jobs:
       - checkout
       - run: *_clone_submodules
       - setup_remote_docker: *_setup_remote_docker
-      - run: *_install_mitto_docker_setup
+      - run: *_install_mitto_dev_runtime
       - run:
           name: Publish to the private pypi
           command: timeout 60 ./make.sh build_and_publish_zuar_py_package $CIRCLE_TAG
