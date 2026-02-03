@@ -31,10 +31,9 @@ def register(
     """Register an engine or create a new one (non thread-safe)."""
     assert __ENGINE_REGISTRY is not None, "Registry not initialized"
 
+    engine_kwargs.setdefault("pool_pre_ping", pool_pre_ping)
     if isinstance(bind, str):
-        engine = utils.create_engine(
-            bind, pool_pre_ping=pool_pre_ping, **engine_kwargs
-        )
+        engine = utils.create_engine(bind, **engine_kwargs)
         bind = engine
     else:
         engine = bind.engine
@@ -48,7 +47,10 @@ def register(
         ttl=__REGISTRY_ITEM_TTL,
         close_callback=lambda registry_item: (
             (_engine := registry_item.value) and
-            _engine.pool.checkedout() == 0 and
+            (
+                not hasattr(_engine.pool, "checkedout") or
+                _engine.pool.checkedout() == 0
+            ) and
             (_engine.dispose() or True)
         ),
     )
